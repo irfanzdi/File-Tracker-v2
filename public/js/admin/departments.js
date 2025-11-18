@@ -123,4 +123,3 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 document.addEventListener("DOMContentLoaded", loadDept);
-document.getElementById("logoutBtn").addEventListener("click", logout);

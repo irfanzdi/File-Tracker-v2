@@ -309,13 +309,17 @@ exports.deleteFileMovement = async (req, res) => {
 exports.approveMovement = async (req, res) => {
   const user = requireSession(req, res);
   if (!user) return;
-  if (user.level !== 1) return res.status(403).json({ error: "Only admin can approve" });
+
+  if (!["super_admin", "admin"].includes(user.role)) {
+    return res.status(403).json({ error: "Only admin can approve" });
+  }
 
   const { move_id } = req.params;
   const [result] = await db1.query(
     "UPDATE file_movement SET status_id=2, approve_by=?, approved_at=NOW() WHERE move_id=?",
     [user.id, move_id]
   );
+
   if (result.affectedRows === 0) return res.status(404).json({ error: "Not found" });
   res.json({ success: true, message: "Approved" });
 };
@@ -323,16 +327,54 @@ exports.approveMovement = async (req, res) => {
 exports.rejectMovement = async (req, res) => {
   const user = requireSession(req, res);
   if (!user) return;
-  if (user.level !== 1) return res.status(403).json({ error: "Only admin can reject" });
+
+  if (!["super_admin", "admin"].includes(user.role)) {
+    return res.status(403).json({ error: "Only admin can reject" });
+  }
 
   const { move_id } = req.params;
   const [result] = await db1.query(
     "UPDATE file_movement SET status_id=3, approve_by=?, approved_at=NOW() WHERE move_id=?",
     [user.id, move_id]
   );
+
   if (result.affectedRows === 0) return res.status(404).json({ error: "Not found" });
   res.json({ success: true, message: "Rejected" });
 };
 
-exports.takeOutFile = async (req, res) => { /* your existing code */ };
-exports.returnFile = async (req, res) => { /* your existing code */ };
+exports.takeOutFile = async (req, res) => {
+  const user = requireSession(req, res);
+  if (!user) return;
+
+  // Only allow users from the same department or admin
+  if (user.role === "user") {
+    return res.status(403).json({ error: "Not allowed to take out file" });
+  }
+
+  const { move_id } = req.params;
+  const [result] = await db1.query(
+    `UPDATE file_movement SET status_id=4, taken_at=NOW() WHERE move_id=?`,
+    [move_id]
+  );
+
+  if (result.affectedRows === 0) return res.status(404).json({ error: "Not found" });
+  res.json({ success: true, message: "File taken out" });
+};
+
+exports.returnFile = async (req, res) => {
+  const user = requireSession(req, res);
+  if (!user) return;
+
+  if (user.role === "user") {
+    return res.status(403).json({ error: "Not allowed to return file" });
+  }
+
+  const { move_id } = req.params;
+  const [result] = await db1.query(
+    `UPDATE file_movement SET status_id=5, return_at=NOW() WHERE move_id=?`,
+    [move_id]
+  );
+
+  if (result.affectedRows === 0) return res.status(404).json({ error: "Not found" });
+  res.json({ success: true, message: "File returned" });
+};
