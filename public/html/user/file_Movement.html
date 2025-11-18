@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>File Movement Approval</title>
+  <link rel="icon" type="image/png" href="/images/SAFWA-R Logo.png">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div>
+      <img src="/images/SAFWA-R Logo.png" alt="Logo" class="w-20 mx-auto mb-8">
+      <h1 class="text-xl font-bold mb-6 flex items-center gap-2">File Tracker</h1>
+      <nav class="flex flex-col gap-3">
+        <a href="homepage.html" class="nav-link">Home</a>
+        <a href="file_list.html" class="nav-link">List of file</a>
+        <a href="file_Movement.html" class="nav-active">Movement Request</a>
+        <a href="request_takeout.html" class="nav-link">Request Take Out</a> 
+      </nav>
+    </div>
+    <button id="logoutBtn" class="logout-btn">Logout</button>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content fade-in">
+    <div class="content-wrapper max-w-7xl mx-auto w-full">
+
+      <section class="card mb-8">
+        <h2 class="section-title">Pending Movement Requests</h2>
+
+        <div class="flex justify-between items-center mb-4">
+          <input id="searchInput" 
+                 type="text" 
+                 placeholder="Search..." 
+                 class="border border-gray-300 rounded-md px-3 py-1 text-sm w-60"
+                 onkeyup="filterTable()"/>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table id="movementTable" class="min-w-full border border-gray-200 text-sm">
+            <thead class="bg-gray-100 text-gray-700 uppercase">
+              <tr>
+                <th class="px-3 py-2 text-left">ID</th>
+                <th class="px-3 py-2 text-left">Requested By</th>
+                <th class="px-3 py-2 text-left">Move Type</th>
+                <th class="px-3 py-2 text-left">Date</th>
+                <th class="px-3 py-2 text-left">Files</th>
+                <th class="px-3 py-2 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200"></tbody>
+          </table>
+        </div>
+
+        <p id="noRequests" class="text-gray-500 text-center mt-4 hidden">
+          No pending requests.
+        </p>
+
+      </section>
+    </div>
+  </main>
+
+  <!-- -------------------------------
+       VIEW DETAILS MODAL
+  ----------------------------------- -->
+  <div id="viewModal"
+       class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="bg-white p-6 w-[90%] sm:w-[450px] rounded-xl shadow-xl transform scale-95 transition-all">
+
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-bold text-gray-700">Movement Details</h2>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-700">✖</button>
+      </div>
+
+      <p><strong>Requested By:</strong> <span id="d_user"></span></p>
+      <p><strong>Move Type:</strong> <span id="d_type"></span></p>
+      <p><strong>Date:</strong> <span id="d_date"></span></p>
+      <p><strong>Remark:</strong> <span id="d_remark"></span></p>
+
+      <h3 class="font-semibold mt-4 mb-1">Files:</h3>
+      <ul id="d_files" class="list-disc pl-6 text-gray-700 text-sm"></ul>
+
+      <div class="flex justify-end gap-2 mt-6">
+        <button onclick="rejectRequest()" 
+                class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+          Reject
+        </button>
+        <button onclick="approveRequest()" 
+                class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+          Approve
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
+  <script src="/js/user/file_Movement.js"></script>
+</body>
+</html>

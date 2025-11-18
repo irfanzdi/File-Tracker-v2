@@ -638,6 +638,18 @@ function closeEditModal() {
   editingFolderId = null;
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("File Movement Approval Page Loaded");
+
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      if (confirm("Logout?")) {
+        fetch("/api/auth/logout").then(() => location.href = "/login.html");
+      }
+    });
+  }
+});
 
 // ============================
 // 🔹 Multi-Select File Enhancements

@@ -31,7 +31,7 @@ app.use("/api", require("./routes/auth.js"));
 app.use("/api/files", require("./routes/files.js"));
 app.use("/api/departments", require("./routes/departments.js"));
 app.use("/api/folder", require("./routes/folder.js"));
-app.use("/api/file-movements", require("./routes/fileMovement.js"));
+app.use("/api/file_movement", require("./routes/fileMovement.js"));
 app.use("/api/locations", require("./routes/locations.js"));
 app.use("/api/users", userRoutes);
 

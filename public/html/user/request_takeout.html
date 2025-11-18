@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Request File Take Out</title>
+  <link rel="icon" type="image/png" href="/images/SAFWA-R Logo.png">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div>
+      <img src="/images/SAFWA-R Logo.png" class="w-20 mx-auto mb-8">
+      <h1 class="text-xl font-bold mb-6 flex items-center gap-2">File Tracker</h1>
+      <nav class="flex flex-col gap-3">
+        <a href="homepage.html" class="nav-link">Home</a>
+        <a href="file_list.html" class="nav-link">List of file</a>
+        <a href="file_Movement.html" class="nav-link">Movement Request</a> 
+        <a href="request_takeout.html" class="nav-active">Request Take Out</a>
+      </nav>
+    </div>
+    <button id="logoutBtn" class="logout-btn">Logout</button>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content fade-in">
+    <div class="content-wrapper max-w-5xl mx-auto w-full">
+
+      <!-- FORM CARD -->
+      <section class="card mb-8">
+        <h2 class="section-title">Request File Movement (Take Out)</h2>
+
+        <form id="requestForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <!-- Movement Type -->
+          <div>
+            <label class="block font-semibold mb-1">Movement Type</label>
+            <select id="moveType" class="input">
+              <option value="Take Out">Take Out</option>
+              <option value="Temporary Borrow">Temporary Borrow</option>
+            </select>
+          </div>
+
+          <!-- Folder select -->
+          <div>
+            <label class="block font-semibold mb-1">Select Folder (Optional)</label>
+            <select id="folderSelect" class="input">
+              <option value="">-- Choose Folder --</option>
+            </select>
+          </div>
+
+          <!-- Remark -->
+          <div class="col-span-2">
+            <label class="block font-semibold mb-1">Remark</label>
+            <textarea id="remark" class="input h-20" placeholder="Reason for taking out"></textarea>
+          </div>
+
+          <!-- Files -->
+          <div class="col-span-2">
+            <label class="block font-semibold mb-1">
+              Select Files (Department Only)
+              <span id="fileCount" class="text-gray-500 ml-1">(0 selected)</span>
+            </label>
+
+            <!-- Search -->
+            <input type="text" id="fileSearch" placeholder="Search files..."
+                   class="border px-2 py-1 text-sm rounded mb-2 w-full"/>
+
+            <!-- Buttons -->
+            <div class="flex justify-end gap-2 mb-2">
+              <button type="button" id="selectAllBtn"
+                      class="text-blue-600 text-sm hover:underline">Select All</button>
+              <button type="button" id="clearBtn"
+                      class="text-gray-600 text-sm hover:underline">Clear</button>
+            </div>
+
+            <!-- File list -->
+            <select id="fileSelect" multiple
+                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                           block w-full p-2.5 h-48 overflow-y-auto">
+              <option disabled>Loading files...</option>
+            </select>
+
+            <p class="text-sm text-gray-500 mt-1">
+              Hold <span class="font-semibold">Ctrl</span> / <span class="font-semibold">Cmd</span> to select multiple.
+            </p>
+          </div>
+
+          <button class="btn-primary col-span-2 mt-4">Submit Request</button>
+        </form>
+      </section>
+
+      <!-- Status -->
+      <section class="card">
+        <h2 class="section-title">Your Latest Requests</h2>
+
+        <div class="overflow-x-auto">
+          <table id="recentTable" class="min-w-full border border-gray-200 text-sm">
+            <thead class="bg-gray-100 text-gray-700 uppercase">
+              <tr>
+                <th class="px-3 py-2 text-left">ID</th>
+                <th class="px-3 py-2 text-left">Type</th>
+                <th class="px-3 py-2 text-left">Date</th>
+                <th class="px-3 py-2 text-left">Files</th>
+                <th class="px-3 py-2 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200"></tbody>
+          </table>
+        </div>
+
+        <p id="noRecent" class="text-gray-500 text-center mt-4 hidden">
+          No record found.
+        </p>
+      </section>
+
+    </div>
+  </main>
+
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
+  <script src="/js/user/request_takeout.js"></script>
+</body>
+</html>

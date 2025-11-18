@@ -491,3 +491,15 @@ window.filterTable = function () {
 window.openViewModal = openViewModal;
 window.closeViewModal = closeViewModal;
 
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("File Movement Approval Page Loaded");
+
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      if (confirm("Logout?")) {
+        fetch("/api/auth/logout").then(() => location.href = "/login.html");
+      }
+    });
+  }
+});

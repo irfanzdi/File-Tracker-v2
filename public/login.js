@@ -31,7 +31,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // ✅ Redirect based on user role
       const role = data.user?.role;
       if (role === "super_admin" || role === "admin") {
-        window.location.href = "/html/admin/Adminpage.html";
+        // window.location.href = "/html/admin/Adminpage.html";
+        window.location.href = "/html/user/homepage.html"
       } else {
         window.location.href = "/html/user/homepage.html";
       }

@@ -109,23 +109,18 @@ function filterTable() {
   });
 }
 
-async function logout() {
-  try {
-    const res = await fetch("/api/logout", {
-      method: "POST",
-      credentials: "include"
-    });
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("File Movement Approval Page Loaded");
 
-    if (res.ok) {
-      location.href = "/login.html";
-    } else {
-      alert("Logout failed");
-    }
-  } catch (err) {
-    console.error("Logout error:", err);
-    alert("Logout request failed");
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      if (confirm("Logout?")) {
+        fetch("/api/auth/logout").then(() => location.href = "/login.html");
+      }
+    });
   }
-}
+});
 
 document.addEventListener("DOMContentLoaded", loadDept);
 document.getElementById("logoutBtn").addEventListener("click", logout);
