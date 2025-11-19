@@ -381,60 +381,6 @@ fileSelect.innerHTML = fileData.map(f => {
 }
 
 
-
-async function openViewModal(id) {
-  try {
-    const res = await fetch(`/api/folder/${id}`);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Failed to load folder");
-
-    // 🧩 Fill data
-    el("viewFolderName").textContent = data.folder_title || data.folder_name || "-";
-    el("viewDepartment").textContent = data.department || "-";
-    el("viewLocation").textContent = data.location || data.location_name || "-";
-    el("viewCreatedBy").textContent = data.created_by || "-";
-    el("viewCreatedAt").textContent = data.created_at
-      ? new Date(data.created_at).toLocaleString()
-      : "-";
-    el("viewSerial").textContent = data.serial_number || data.serial_num || "-";
-
-    // 🧩 Show QR
-    const qrImg = el("viewQr");
-    qrImg.src =
-      data.qr_code ||
-      "https://api.qrserver.com/v1/create-qr-code/?data=No+QR+Available&size=150x150";
-
-    // 🧩 Files list
-    const list = el("viewFiles");
-    list.innerHTML = "";
-    (data.files_inside && data.files_inside.length
-      ? data.files_inside
-      : ["No files inside"]
-    ).forEach((f) => {
-      const li = document.createElement("li");
-      li.textContent = f;
-      list.appendChild(li);
-    });
-
-    // 🧩 Make modal visible
-    const modal = el("viewModal");
-    const content = el("viewModalContent");
-    modal.classList.remove("hidden");
-    modal.classList.add("flex", "show");
-
-    // 🧩 Animate in the modal content
-    setTimeout(() => {
-      content.classList.remove("opacity-0", "translate-y-10");
-      content.classList.add("opacity-100", "translate-y-0");
-    }, 50);
-  } catch (err) {
-    console.error("❌ Error opening view modal:", err);
-    showToast("Failed to load folder details", "error");
-  }
-}
-
-
-
 async function saveFolderChanges() {
   const folderNameInput = el("editFolderName");
   const deptSelect = el("editDepartmentSelect");
