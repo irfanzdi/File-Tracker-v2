@@ -38,7 +38,7 @@ async function loadFiles() {
     }
 
     // 4. Populate dropdown
-    fileSelect.innerHTML = "<option value=''>-- Select File --</option>";
+    fileSelect.innerHTML = " ";
     data.forEach(f => {
       const opt = new Option(
         `${f.file_name} (Folder: ${f.folder_name})`,
@@ -194,7 +194,7 @@ async function loadRecent() {
       row.innerHTML = `
         <td class="px-3 py-2">${req.move_id}</td>
         <td class="px-3 py-2">${req.move_type}</td>
-        <td class="px-3 py-2">${req.move_date}</td>
+        <td class="px-3 py-2">${new Date(req.move_date).toLocaleString()}</td>
         <td class="px-3 py-2">${req.files.length} file(s)</td>
         <td class="px-3 py-2">${
           req.status_name || "Pending"

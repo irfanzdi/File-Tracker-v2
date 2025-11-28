@@ -22,8 +22,28 @@
 
 <body class="bg-gray-50 text-gray-800">
 
+<<<<<<< HEAD
   <div id="navbar-container"></div>
   <script src="/NAVBARS/adminNavbar.js"></script>
+=======
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div>
+      <img src="/images/SAFWA-R Logo.png" alt="Logo" class="w-20 mx-auto mb-8">
+      <h1 class="text-xl font-bold mb-6 flex items-center gap-2">Admin | File Tracker</h1>
+      <nav class="flex flex-col gap-3">
+        <a href="Adminpage.html" class="nav-active">Folder</a>
+        <a href="file_list.html" class="nav-link">List of file</a>
+        <a href="file_Movement.html" class="nav-link">Movement Request</a>
+        <a href="departments.html" class="nav-link"> Departments</a>
+        <a href="locations.html" class="nav-link"> Locations</a>
+        <a href="users.html" class="nav-link"> Users</a> 
+      </nav>
+    </div>
+
+    <button id="logoutBtn" class="logout-btn">Logout</button>
+  </aside>
+>>>>>>> 3d84e66d12b04fb5b2397d84ff2ae64029dc490f
 
   <!-- Main Content -->
   <main class="main-content fade-in">
@@ -111,12 +131,22 @@
           <table id="recordTable" class="min-w-full border border-gray-200 text-sm">
             <thead class="bg-gray-100 text-gray-700 uppercase">
               <tr>
+<<<<<<< HEAD
                 <th class="px-4 py-3 text-left">Type</th>
                 <th class="px-4 py-3 text-left">Name</th>
                 <th class="px-4 py-3 text-left">Department</th>
                 <th class="px-4 py-3 text-left">Location</th>
                 <th class="px-4 py-3 text-left">Serial No</th>
                 <th class="px-4 py-3 text-left">Actions</th>
+=======
+                <!-- <th class="px-3 py-2 text-left">ID</th> -->
+                <th class="px-3 py-2 text-center">Serial Number</th>
+                <th class="px-3 py-2 text-center">Folder Name</th>
+                <th class="px-3 py-2 text-center">Department</th>
+                <th class="px-3 py-2 text-center">Location</th>
+                <th class="px-3 py-2 text-center">File Inside</th>
+                <th class="px-3 py-2 text-center">Actions</th>
+>>>>>>> 3d84e66d12b04fb5b2397d84ff2ae64029dc490f
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200"></tbody>

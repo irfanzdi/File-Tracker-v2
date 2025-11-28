@@ -71,6 +71,15 @@ function renderTable(files) {
       <td class="border px-4 py-2 text-center">${new Date(f.uploaded_at).toLocaleString()}</td>
       <td class="border px-4 py-2 text-center">${f.created_by || "-"}</td>
       <td class="flex justify-center gap-2 py-2">
+      <button 
+          onclick='openEditModal(${f.file_id})' 
+          class="bg-gray-500 hover:bg-gray-400 text-white px-3 py-1 rounded-md text-sm font-medium transition">
+          Edit
+        </button>
+        <button onclick='deleteFile(${f.file_id})' 
+          class="bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm font-medium transition">
+          Delete
+        </button>
       </td>
     `;
     tbody.appendChild(row);
@@ -83,10 +92,15 @@ function renderTable(files) {
 let editingFileId = null;
 
 // ✅ Open Edit Modal
-function openEditModal(file) {
+function openEditModal(fileId) {
+  const file = fileData.find(x => x.file_id === fileId);
+  if (!file) return alert("File not found");
+
   editingFileId = file.file_id;
   document.getElementById("editFile").value = file.file_name || "";
-  document.getElementById("editModal").classList.remove("hidden");
+
+  const modal = document.getElementById("editModal");
+  modal.classList.add("show");   // ✅ Correct way to open modal
 }
 
 // ✅ Save Edited File
@@ -115,10 +129,10 @@ async function editFile() {
 
 // ✅ Close Modal
 function closeEditModal() {
-  document.getElementById("editModal").classList.add("hidden");
+  const modal = document.getElementById("editModal");
+  modal.classList.remove("show");   // ❗ hide properly
   editingFileId = null;
 }
-
 
 
 // ================================

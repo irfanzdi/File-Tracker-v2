@@ -474,6 +474,7 @@ function renderLocationsTable(locations) {
     row.className = "hover:bg-gray-50 transition";
     
     row.innerHTML = `
+<<<<<<< HEAD
       <td class="px-4 py-3 text-center font-semibold text-blue-600">#${loc.location_id}</td>
       <td class="px-4 py-3 font-medium text-gray-800">${escapeHtml(loc.location_name)}</td>
       <td class="px-4 py-3 text-center">
@@ -490,10 +491,27 @@ function renderLocationsTable(locations) {
       </td>
     `;
     
+=======
+      <td class="border px-4 py-2 text-center">${loc.location_id}</td>
+      <td class="border px-4 py-2">${loc.location_name}</td>
+      <td class="flex gap-2 justify-center py-2">
+        <button 
+          onclick='openEditModal(${loc.location_id})' 
+          class="bg-gray-500 hover:bg-gray-400 text-white px-3 py-1 rounded-md text-sm font-medium transition">
+          Edit
+        </button>
+        <button 
+          onclick='deleteLoct(${loc.location_id})' 
+          class="bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm font-medium transition">
+          Delete
+        </button>
+      </td>`;
+>>>>>>> 3d84e66d12b04fb5b2397d84ff2ae64029dc490f
     tbody.appendChild(row);
   });
 }
 
+<<<<<<< HEAD
 // ============================
 // 🔹 Open Edit Modal
 // ============================
@@ -510,13 +528,28 @@ function openEditModal(locationId) {
   const modal = el("editModal");
   modal.classList.remove("hidden");
   setTimeout(() => modal.classList.add("modal-show"), 10);
+=======
+// ✅ Open Edit Modal
+function openEditModal(locationId) {
+  const location = locations.find(x => x.location_id === locationId);
+  if (!location) return alert("Location not found");
+
+  editId = location.location_id;
+  document.getElementById("editLoct").value = location.location_name;
+
+  document.getElementById("editModal").classList.add("show");  
+>>>>>>> 3d84e66d12b04fb5b2397d84ff2ae64029dc490f
 }
 
 function closeEditModal() {
+<<<<<<< HEAD
   const modal = el("editModal");
   modal.classList.remove("modal-show");
   setTimeout(() => modal.classList.add("hidden"), 200);
   editId = null;
+=======
+  document.getElementById("editModal").classList.remove("show"); // ❗ remove show
+>>>>>>> 3d84e66d12b04fb5b2397d84ff2ae64029dc490f
 }
 
 // ============================
@@ -540,6 +573,7 @@ async function saveLocationChanges(e) {
       body: JSON.stringify({ location_name })
     });
 
+<<<<<<< HEAD
     if (res.ok) {
       showToast("Location updated successfully!");
       closeEditModal();
@@ -644,3 +678,6 @@ window.onLocationChange = onLocationChange;
 window.loadRackView = loadRackView;
 window.openCellDetails = openCellDetails;
 window.closeViewModal = closeViewModal;
+=======
+document.addEventListener("DOMContentLoaded", loadLoct);
+>>>>>>> 3d84e66d12b04fb5b2397d84ff2ae64029dc490f

@@ -44,7 +44,7 @@ function renderTable(departments) {
       <td class="border px-4 py-2">${d.department}</td>
       <td class="flex gap-2 justify-center py-2">
         <button 
-          onclick='openEditModal(${JSON.stringify(d)})' 
+          onclick='openEditModal(${d.department_id})' 
           class="bg-gray-500 hover:bg-gray-400 text-white px-3 py-1 rounded-md text-sm font-medium transition">
           Edit
         </button>
@@ -57,14 +57,18 @@ function renderTable(departments) {
   });
 }
 
-function openEditModal(department) {
+function openEditModal(deptId) {
+  const department = departments.find(x => x.department_id === deptId);
+  if (!department) return alert("Department not found");
+
   editId = department.department_id;
   document.getElementById("editDept").value = department.department;
-  document.getElementById("editModal").classList.remove("hidden");
+
+  document.getElementById("editModal").classList.add("show"); 
 }
 
 function closeEditModal() {
-  document.getElementById("editModal").classList.add("hidden");
+  document.getElementById("editModal").classList.remove("show"); 
 }
 
 async function editDept() {
@@ -123,4 +127,3 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 document.addEventListener("DOMContentLoaded", loadDept);
-document.getElementById("logoutBtn").addEventListener("click", logout);
