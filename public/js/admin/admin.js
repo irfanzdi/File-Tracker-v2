@@ -1,6 +1,7 @@
+// /js/super_admin/super_admin.js
+// Fixed version with working View and Edit buttons
 
-
-console.log("🔧 admin.js loading...");
+console.log("🔧 super_admin.js loading...");
 
 // ---------------------------
 // Helper
@@ -90,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // View modal
-  el("closeViewModalBtn")?.addEventListener("click", closeViewModal);
+  el("closeViewModal")?.addEventListener("click", closeViewModal);
   el("closeViewModalBtn2")?.addEventListener("click", closeViewModal);
   el("downloadQrBtn")?.addEventListener("click", downloadQrCode);
   el("downloadBarcodeBtn")?.addEventListener("click", downloadBarcode);
@@ -449,26 +450,34 @@ function openViewModal(id) {
 
   console.log("Found folder:", folder);
 
-  el("viewFolderName").textContent = folder.folder_name || "-";
-  el("viewDepartment").textContent = folder.department || "-";
-  el("viewLocation").textContent = folder.location_name || folder.location || "-";
-  el("viewCreatedBy").textContent = folder.created_by || "-";
-  el("viewCreatedAt").textContent = folder.created_at ? new Date(folder.created_at).toLocaleString() : "-";
-  el("viewSerial").textContent = folder.serial_num || "-";
-  el("filesCount").textContent = folder.files_inside?.length || 0;
+  // Safe text setter
+  const setText = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text ?? "-";
+  };
+
+  setText("viewFolderName", folder.folder_name);
+  setText("viewDepartment", folder.department);
+  setText("viewLocation", folder.location_name || folder.location);
+  setText("viewCreatedBy", folder.created_by);
+  setText("viewCreatedAt", folder.created_at ? new Date(folder.created_at).toLocaleString() : "-");
+  setText("viewSerial", folder.serial_num);
+  setText("filesCount", folder.files_inside?.length ?? 0);
 
   // Used for section
-  const usedForSection = el("viewUsedForSection");
-  const usedForText = el("viewUsedFor");
-  if (folder.used_for) {
-    usedForText.textContent = folder.used_for;
-    usedForSection.classList.remove("hidden");
-  } else {
-    usedForSection.classList.add("hidden");
+  const usedForSection = document.getElementById("viewUsedForSection");
+  const usedForText = document.getElementById("viewUsedFor");
+  if (usedForSection && usedForText) {
+    if (folder.used_for) {
+      usedForText.textContent = folder.used_for;
+      usedForSection.classList.remove("hidden");
+    } else {
+      usedForSection.classList.add("hidden");
+    }
   }
 
   // Files list
-  const viewFiles = el("viewFiles");
+  const viewFiles = document.getElementById("viewFiles");
   if (viewFiles) {
     viewFiles.innerHTML = "";
     if (folder.files_inside && folder.files_inside.length) {
@@ -484,7 +493,7 @@ function openViewModal(id) {
   }
 
   // QR Code
-  const qrImg = el("viewQr");
+  const qrImg = document.getElementById("viewQr");
   if (qrImg) {
     if (folder.qr_code) {
       qrImg.src = folder.qr_code;
@@ -514,19 +523,21 @@ function openViewModal(id) {
   }
 
   // Show modal
-  const modal = el("viewModal");
+  const modal = document.getElementById("viewModal");
   if (modal) {
     modal.classList.remove("hidden");
     setTimeout(() => modal.classList.add("modal-show"), 10);
   }
 }
 
+
 function closeViewModal() {
-  const modal = el("viewModal");
+  const modal = document.getElementById("viewModal");
   if (!modal) return;
   modal.classList.remove("modal-show");
   setTimeout(() => modal.classList.add("hidden"), 200);
 }
+
 
 // ---------------------------
 // Open Edit Modal

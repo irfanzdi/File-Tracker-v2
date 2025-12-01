@@ -37,8 +37,7 @@ let userDepartment = null; // Store logged-in user's department
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOMContentLoaded — initializing UI...");
 
-  // Get user department from localStorage or session
-  getUserDepartment();
+
 
   // Buttons
   el("registerFolderBtn")?.addEventListener("click", () => {
@@ -100,28 +99,104 @@ document.addEventListener("DOMContentLoaded", () => {
   loadFolders();
 });
 
+async function loadUserDepartment() {
+  await getUserDepartment(); // your existing function
+  const deptInput = document.getElementById("folderDepartment");
+  if (deptInput && userDepartment) {
+    deptInput.value = userDepartment; // correct for input
+  } else {
+    console.warn("folderDepartment input not found or userDepartment is null");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadUserDepartment);
 // ---------------------------
 // Get User Department
 // ---------------------------
 async function getUserDepartment() {
   try {
-    // Try to get from API first
-    const res = await fetch("/api/auth/user");
+    const res = await fetch("/api/users/me");
     if (res.ok) {
       const userData = await res.json();
-      userDepartment = userData.department_id;
-      console.log("User department loaded:", userDepartment);
+
+      // FIX: accept any possible key your backend uses
+      userDepartment =
+        userData.department_id ||   // what frontend expects
+        userData.dept ||            // backend session value
+        null;
+
+      console.log("User department loaded from API:", userDepartment);
       return;
     }
   } catch (e) {
     console.warn("Could not fetch user department from API");
   }
-  
-  // Fallback: get from localStorage
+
+  // Fallback: localStorage
   const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-  userDepartment = storedUser.department_id || storedUser.department || null;
-  console.log("User department from localStorage:", userDepartment);
+
+  userDepartment =
+    storedUser.department_id ||    // expected
+    storedUser.dept ||             // backend session key
+    storedUser.department ||       // if only name exists
+    null;
+
+  console.log("User department loaded from localStorage:", userDepartment);
 }
+
+async function showUserDepartmentTopRight() {
+  try {
+    const res = await fetch("/api/users/me");
+    if (!res.ok) throw new Error("Failed to fetch user");
+
+    const userData = await res.json();
+    const displayEl = document.getElementById("userDepartmentDisplay");
+    if (displayEl) {
+      displayEl.textContent = userData.department_name || userData.department || "N/A";
+    }
+
+    // Store department ID for folder form
+    window.userDeptId = userData.department_id || userData.dept || null;
+  } catch (err) {
+    console.error("Failed to load user department:", err);
+    const displayEl = document.getElementById("userDepartmentDisplay");
+    if (displayEl) displayEl.textContent = "N/A";
+    window.userDeptId = null;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", showUserDepartmentTopRight);
+
+
+async function loadUserDepartmentForForm() {
+  try {
+    const res = await fetch("/api/users/me");
+    if (!res.ok) throw new Error("Failed to fetch user");
+    const userData = await res.json();
+
+    // Populate folder form input with name
+    const deptInput = document.getElementById("folderDepartment");
+    if (deptInput) {
+      deptInput.value = userData.department_name || userData.department || "N/A";
+    }
+
+    // Store the ID for saving
+    window.userDeptId = userData.department_id || userData.dept || null;
+
+  } catch (err) {
+    console.error("Failed to load department for form:", err);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadUserDepartmentForForm);
+
+// Or if you show the form dynamically:
+function showFolderForm() {
+  const section = document.getElementById("folderFormSection");
+  section.classList.remove("hidden");
+  loadUserDepartmentForForm(); // populate input after showing
+}
+
 
 // ---------------------------
 // Cancel Registration
@@ -296,6 +371,7 @@ async function loadFolders() {
   applyFilters();
 }
 
+
 // ---------------------------
 // Render Table
 // ---------------------------
@@ -364,29 +440,29 @@ function renderTable(folders) {
         openViewModal(folderId);
       };
 
-      const editBtn = document.createElement("button");
-      editBtn.className = "action-btn action-btn-edit";
-      editBtn.textContent = "Edit";
-      editBtn.type = "button";
-      editBtn.onclick = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        openEditModal(folderId);
-      };
+      // const editBtn = document.createElement("button");
+      // editBtn.className = "action-btn action-btn-edit";
+      // editBtn.textContent = "Edit";
+      // editBtn.type = "button";
+      // editBtn.onclick = function(e) {
+      //   e.preventDefault();
+      //   e.stopPropagation();
+      //   openEditModal(folderId);
+      // };
 
-      const deleteBtn = document.createElement("button");
-      deleteBtn.className = "action-btn action-btn-delete";
-      deleteBtn.textContent = "Delete";
-      deleteBtn.type = "button";
-      deleteBtn.onclick = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        openDeleteModal(folderId, folder.folder_name, folder.serial_num);
-      };
+      // const deleteBtn = document.createElement("button");
+      // deleteBtn.className = "action-btn action-btn-delete";
+      // deleteBtn.textContent = "Delete";
+      // deleteBtn.type = "button";
+      // deleteBtn.onclick = function(e) {
+      //   e.preventDefault();
+      //   e.stopPropagation();
+      //   openDeleteModal(folderId, folder.folder_name, folder.serial_num);
+      // };
 
       actionsCell.appendChild(viewBtn);
-      actionsCell.appendChild(editBtn);
-      actionsCell.appendChild(deleteBtn);
+      // actionsCell.appendChild(editBtn);
+      // actionsCell.appendChild(deleteBtn);
     }
   });
 }
@@ -529,7 +605,7 @@ function openEditModal(id) {
     return showToast("Folder not found", "error");
   }
 
-  el("editFolderName").value = folder.folder_name || "";
+  // el("editFolderName").value = folder.folder_name || "";
   
   const dept = el("editDepartmentSelect");
   if (dept) {
@@ -655,44 +731,59 @@ async function confirmDelete() {
 // ---------------------------
 // Create Folder (STAFF: Location empty, department auto-filled)
 // ---------------------------
+// Assume getUserDepartment() gives you both id and name
+// userDepartment = { id: 6, name: "IT" }
+
 async function createFolder(e) {
   e.preventDefault();
-  const folder_name = el("folderTitle")?.value?.trim();
-  const department_id = el("folderDepartmentSelect")?.value;
-  const serial_num = el("folderSerial")?.value;
-  const used_for = el("folderUsedFor")?.value?.trim() || "";
 
-  if (!folder_name || !department_id) {
-    return showToast("Please fill all required fields!", "error");
-  }
+  const folder_name = document.getElementById("folderTitle")?.value?.trim();
+  const serial_num = document.getElementById("folderSerial")?.value || null;
+  const used_for = document.getElementById("folderUsedFor")?.value?.trim() || "";
+  const location_id = document.getElementById("folderLocationsSelect")?.value || null;
 
-  const deptText = el("folderDepartmentSelect").options[el("folderDepartmentSelect").selectedIndex]?.textContent || "";
+  // Validation
+  if (!folder_name) return showToast("Folder title is required!", "error");
+  if (!userDeptId) return showToast("Department not loaded yet!", "error");
+
+  // Build payload
+  const payload = {
+    folder_name,
+    department_id: Number(userDeptId), // send ID as number
+    location_id: location_id ? Number(location_id) : 6,
+    serial_num,
+    used_for
+  };
+
+  console.log("Saving folder payload:", payload);
 
   try {
-    // STAFF: Send with empty location (HR will assign later)
     const res = await fetch("/api/folder", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        folder_name, 
-        department_id, 
-        location_id: null, // Empty location
-        serial_num, 
-        used_for 
-      })
+      body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error("API failed");
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to save folder");
+    }
+
     showToast("Folder successfully added! HR will assign location.");
     e.target.reset();
     cancelRegistration();
     await loadFolders();
+
   } catch (err) {
+    console.error("Failed to save folder:", err);
+
+    // Local fallback
     const folders = JSON.parse(localStorage.getItem("folders") || "[]");
     folders.push({
       folder_id: Date.now(),
       folder_name,
-      department: deptText,
-      location: "Unassigned", // STAFF: Location empty initially
+      department: document.getElementById("folderDepartment")?.value || "N/A",
+      location: "Unassigned",
       serial_num,
       used_for,
       files_inside: [],
@@ -701,12 +792,16 @@ async function createFolder(e) {
       is_active: true
     });
     localStorage.setItem("folders", JSON.stringify(folders));
-    showToast("Folder added (local)! HR will assign location.");
+
+    showToast("Folder added locally! HR will assign location.");
     e.target.reset();
     cancelRegistration();
     await loadFolders();
   }
 }
+
+// Attach form submit
+document.getElementById("folderForm")?.addEventListener("submit", createFolder);
 
 // ---------------------------
 // Create File (Normal: Choose folder)
@@ -977,6 +1072,6 @@ function downloadBarcode() {
   img.src = url;
 }
 
-function printFolderDetails() { window.print(); }
+function printFolderDetails() { window.print();}
 
 console.log("✅ staff.js loaded successfully!");

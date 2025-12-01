@@ -7,31 +7,33 @@ const QRCode = require("qrcode");
 exports.getAllFiles = async (req, res) => {
   try {
     const query = `
-      SELECT 
-        fm.move_id,
-        fm.user_id,
-        u.fullname AS user_name,
-        fm.move_date,
-        fm.status_id,
-        fm.approved_at,
-        a.fullname AS approved_by_name,
-        
-        JSON_ARRAYAGG(
-          JSON_OBJECT(
-            'file_name', f.file_name
-          )
-        ) AS files
-        
-      FROM file_movement fm
-      LEFT JOIN infracit_sharedb.users u ON u.id = fm.user_id
-      LEFT JOIN users a ON a.id = fm.approved_by
-      LEFT JOIN file_movement_files f ON f.move_id = fm.move_id
-      
-      GROUP BY fm.move_id
-      ORDER BY fm.move_id DESC;
-    `;
+        SELECT 
+          fm.move_id,
+          fm.user_id,
+          u.usr_name AS user_name,
+          fm.move_date,
+          fm.status_id,
+          fm.approved_at,
+          a.usr_name AS approved_by_name,
 
-    const [rows] = await db.query(query);
+          JSON_ARRAYAGG(
+            JSON_OBJECT(
+              'file_name', fl.file_name
+            )
+          ) AS files
+          
+        FROM file_movement fm
+        LEFT JOIN infracit_sharedb.users u ON u.user_id = fm.user_id
+        LEFT JOIN infracit_sharedb.users a ON a.user_id = fm.approve_by
+        LEFT JOIN file_movement_files f ON f.move_id = fm.move_id
+        LEFT JOIN file fl ON fl.file_id = f.file_id   
+
+        GROUP BY fm.move_id
+        ORDER BY fm.move_id DESC;
+      `;
+
+
+    const [rows] = await db1.query(query);
     res.json(rows);
 
   } catch (err) {
@@ -39,6 +41,37 @@ exports.getAllFiles = async (req, res) => {
     res.status(500).json({ message: "Failed to load file movements" });
   }
 };
+
+// =========================
+// GET file list 
+// =========================
+// =========================
+// GET file list with folder names
+// =========================
+exports.getFileList = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        f.file_id,
+        f.file_name,
+        COALESCE(f.folder_id, ff.folder_id) AS folder_id,
+        COALESCE(fd.folder_name, fo.folder_name) AS folder_name
+      FROM file f
+      LEFT JOIN folder fd ON fd.folder_id = f.folder_id
+      LEFT JOIN folder_files ff ON f.file_id = ff.file_id
+      LEFT JOIN folder fo ON ff.folder_id = fo.folder_id
+      ORDER BY f.file_id DESC
+    `;
+
+    const [rows] = await db1.query(query);
+    res.json(rows);
+
+  } catch (err) {
+    console.error("DB ERROR:", err);
+    res.status(500).json({ message: "Failed to load file list" });
+  }
+};
+
 
 
 // =========================

@@ -6,7 +6,7 @@ const fileController = require("../controllers/fileController");
 // File CRUD
 // =========================
 router.get("/", fileController.getAllFiles);
-
+router.get("/list", fileController.getFileList);
 // Commented out because not implemented yet
 // router.get("/available-for-folder", fileController.getAvailableFilesForFolder);
 

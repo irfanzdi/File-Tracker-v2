@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>History | File Tracking System</title>
+  <title>Admin Panel | File Tracking System</title>
   <link rel="icon" type="image/png" href="/Images/SAFWA-R Logo.png">
   <link rel="stylesheet" href="/styles.css">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-
 <body class="bg-gray-50 text-gray-800">
 
   <!-- Toast Container -->
@@ -18,11 +17,11 @@
   <aside class="sidebar">
     <div>
       <img src="/images/SAFWA-R Logo.png" alt="Logo" class="w-20 mx-auto mb-8">
-      <h1 class="text-xl font-bold mb-6 flex items-center gap-2">Admin Panel || File Tracker</h1>
+      <h1 class="text-xl font-bold mb-6 flex items-center gap-2">Admin Panel | File Tracker</h1>
       <nav class="flex flex-col gap-3">
         <a href="admin.html" class="nav-link">Folders & Files</a>
         <a href="activityLog.html" class="nav-link">Activity Logs</a>
-        <a href="history.html" class="nav-active">History Records</a>
+        <a href="history.html" class="nav-active">History</a>
         <a href="locations.html" class="nav-link">Cabinet Request</a>
       </nav>
     </div>
@@ -62,12 +61,9 @@
         <h3 class="font-semibold mb-4 text-gray-700">Filter History</h3>
         <div class="flex flex-wrap gap-4 mb-4">
           <input id="filterDateFrom" type="date" placeholder="Date From" class="input w-full sm:w-52" />
-          
           <input id="filterDateTo" type="date" placeholder="Date To" class="input w-full sm:w-52" />
-          
           <input id="searchHistory" type="text" placeholder="Search by file name or user..." class="input w-full sm:w-64" />
         </div>
-        
         <div class="flex flex-wrap gap-3">
           <button id="filterBtn" class="btn-primary">Apply Filter</button>
           <button id="resetBtn" class="btn-secondary">Reset</button>
@@ -83,15 +79,18 @@
             Showing <span id="showingCount">0</span> of <span id="totalCount">0</span> records
           </div>
         </div>
-
         <div class="overflow-x-auto">
           <table id="historyTable" class="min-w-full text-sm">
             <thead class="bg-gray-100 text-gray-700 uppercase text-xs">
               <tr>
                 <th class="px-4 py-3 text-center">Move ID</th>
+                <th class="px-4 py-3 text-left">Request Date</th>
+                <th class="px-4 py-3 text-left">Taken Out Date</th>
+                <th class="px-4 py-3 text-left">Returned Date</th>
                 <th class="px-4 py-3 text-left">File Name</th>
-                <th class="px-4 py-3 text-left">Approved</th>
-                <th class="px-4 py-3 text-left">Returned</th>
+                <th class="px-4 py-3 text-left">Requestor Name</th>
+                <th class="px-4 py-3 text-left">Approved by</th>
+                <th class="px-4 py-3 text-left">Status</th>
                 <th class="px-4 py-3 text-center">Actions</th>
               </tr>
             </thead>
@@ -100,7 +99,6 @@
             </tbody>
           </table>
         </div>
-
         <p id="noHistory" class="text-gray-500 text-center mt-4 hidden">No history records found.</p>
 
         <!-- Pagination -->
@@ -125,6 +123,7 @@
     </div>
   </main>
 
+  <!-- Modals -->
   <!-- History Details Modal -->
   <div id="historyModal" class="modal">
     <div class="modal-content">
@@ -132,9 +131,7 @@
         <h3 class="text-xl font-bold">Movement Timeline</h3>
         <button id="closeModal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
       </div>
-      <div id="modalBody" class="space-y-4">
-        <!-- History details will be loaded here -->
-      </div>
+      <div id="modalBody" class="space-y-4"></div>
       <div class="flex justify-end mt-6">
         <button id="closeModalBtn" class="btn-secondary">Close</button>
       </div>
@@ -192,553 +189,8 @@
     </div>
   </div>
 
-  <script>
-    // Mock data - All approved requests (status_id 3, 4, 5 from activity log)
-    // This shows the complete lifecycle: approved -> taken-out -> available
-    let historyRecords = [
-      {
-        move_id: 2,
-        file_id: 102,
-        fileName: "Project Proposal Q1 2024.docx",
-        user_id: 8,
-        requestedBy: "Mike Johnson",
-        move_date: "2024-01-14 14:15:00",
-        status_id: 3, // approved but not taken yet
-        status: "approved",
-        approved_by: 1,
-        approvedBy: "Admin User",
-        approved_at: "2024-01-14 15:30:00",
-        taken_out_at: null,
-        taken_by: null,
-        returned_at: null,
-        returned_by: null,
-        duration: null
-      },
-      {
-        move_id: 3,
-        file_id: 103,
-        fileName: "Financial Report 2023.xlsx",
-        user_id: 12,
-        requestedBy: "Emily Davis",
-        move_date: "2024-01-13 11:20:00",
-        status_id: 4, // taken out (unavailable)
-        status: "taken-out",
-        approved_by: 1,
-        approvedBy: "Admin User",
-        approved_at: "2024-01-13 12:00:00",
-        taken_out_at: "2024-01-13 12:30:00",
-        taken_by: "Emily Davis",
-        returned_at: null,
-        returned_by: null,
-        duration: "11 days (ongoing)"
-      },
-      {
-        move_id: 5,
-        file_id: 105,
-        fileName: "HR Policy Manual.pdf",
-        user_id: 9,
-        requestedBy: "Lisa Anderson",
-        move_date: "2024-01-11 16:30:00",
-        status_id: 5, // returned (available)
-        status: "available",
-        approved_by: 1,
-        approvedBy: "Admin User",
-        approved_at: "2024-01-11 17:00:00",
-        taken_out_at: "2024-01-11 17:30:00",
-        taken_by: "Lisa Anderson",
-        returned_at: "2024-01-20 10:15:00",
-        returned_by: "Lisa Anderson",
-        duration: "8 days 16 hours"
-      },
-      {
-        move_id: 6,
-        file_id: 106,
-        fileName: "Employee Contract - John Doe.pdf",
-        user_id: 5,
-        requestedBy: "Sarah Wilson",
-        move_date: "2024-01-10 09:00:00",
-        status_id: 5,
-        status: "available",
-        approved_by: 1,
-        approvedBy: "Admin User",
-        approved_at: "2024-01-10 09:30:00",
-        taken_out_at: "2024-01-10 10:00:00",
-        taken_by: "Sarah Wilson",
-        returned_at: "2024-01-15 14:20:00",
-        returned_by: "Sarah Wilson",
-        duration: "5 days 4 hours"
-      },
-      {
-        move_id: 7,
-        file_id: 107,
-        fileName: "Budget Report 2024.xlsx",
-        user_id: 8,
-        requestedBy: "Mike Johnson",
-        move_date: "2024-01-08 11:00:00",
-        status_id: 4,
-        status: "taken-out",
-        approved_by: 1,
-        approvedBy: "Admin User",
-        approved_at: "2024-01-08 11:30:00",
-        taken_out_at: "2024-01-08 13:00:00",
-        taken_by: "Mike Johnson",
-        returned_at: null,
-        returned_by: null,
-        duration: "16 days (ongoing)"
-      },
-      {
-        move_id: 8,
-        file_id: 108,
-        fileName: "Legal Agreement - Client A.pdf",
-        user_id: 6,
-        requestedBy: "Tom Brown",
-        move_date: "2024-01-05 10:00:00",
-        status_id: 5,
-        status: "available",
-        approved_by: 1,
-        approvedBy: "Admin User",
-        approved_at: "2024-01-05 10:30:00",
-        taken_out_at: "2024-01-05 11:00:00",
-        taken_by: "Tom Brown",
-        returned_at: "2024-01-18 16:45:00",
-        returned_by: "Tom Brown",
-        duration: "13 days 5 hours"
-      },
-      {
-        move_id: 9,
-        file_id: 109,
-        fileName: "Marketing Campaign Q1.pptx",
-        user_id: 9,
-        requestedBy: "Lisa Anderson",
-        move_date: "2024-01-03 14:00:00",
-        status_id: 3,
-        status: "approved",
-        approved_by: 1,
-        approvedBy: "Admin User",
-        approved_at: "2024-01-03 14:30:00",
-        taken_out_at: null,
-        taken_by: null,
-        returned_at: null,
-        returned_by: null,
-        duration: null
-      }
-    ];
-
-    let currentPage = 1;
-    let rowsPerPage = 25;
-    let filteredRecords = historyRecords;
-    let editingRecordId = null;
-    let deletingRecordId = null;
-
-    // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-      loadHistory();
-      updateStats();
-      setupEventListeners();
-    });
-
-    function setupEventListeners() {
-      document.getElementById('filterBtn').addEventListener('click', applyFilters);
-      document.getElementById('resetBtn').addEventListener('click', resetFilters);
-      document.getElementById('exportBtn').addEventListener('click', exportToCSV);
-      document.getElementById('searchHistory').addEventListener('input', applyFilters);
-      document.getElementById('rowsPerPage').addEventListener('change', handleRowsPerPageChange);
-      document.getElementById('prevPage').addEventListener('click', () => changePage(-1));
-      document.getElementById('nextPage').addEventListener('click', () => changePage(1));
-      document.getElementById('logoutBtn').addEventListener('click', logout);
-      document.getElementById('closeModal').addEventListener('click', closeModal);
-      document.getElementById('closeModalBtn').addEventListener('click', closeModal);
-      document.getElementById('closeEditModal').addEventListener('click', closeEditModal);
-      document.getElementById('cancelEdit').addEventListener('click', closeEditModal);
-      document.getElementById('saveEdit').addEventListener('click', saveEdit);
-      document.getElementById('cancelDelete').addEventListener('click', closeDeleteModal);
-      document.getElementById('confirmDelete').addEventListener('click', confirmDelete);
-    }
-
-    function loadHistory() {
-      const tbody = document.getElementById('historyTableBody');
-      const noHistory = document.getElementById('noHistory');
-      
-      // Calculate pagination
-      const startIndex = (currentPage - 1) * rowsPerPage;
-      const endIndex = startIndex + rowsPerPage;
-      const paginatedData = filteredRecords.slice(startIndex, endIndex);
-
-      tbody.innerHTML = '';
-
-      if (filteredRecords.length === 0) {
-        noHistory.classList.remove('hidden');
-        document.getElementById('showingCount').textContent = '0';
-        document.getElementById('totalCount').textContent = '0';
-        return;
-      }
-
-      noHistory.classList.add('hidden');
-
-      paginatedData.forEach(record => {
-        const row = createHistoryRow(record);
-        tbody.appendChild(row);
-      });
-
-      updatePaginationInfo();
-    }
-
-    function createHistoryRow(record) {
-      const tr = document.createElement('tr');
-      tr.classList.add('hover:bg-gray-50');
-      
-      tr.innerHTML = `
-        <td class="px-4 py-3 text-center font-semibold">#${record.move_id}</td>
-        <td class="px-4 py-3">${record.fileName}</td>
-        <td class="px-4 py-3 text-sm">
-          <div>${formatDateTime(record.approved_at)}</div>
-          <div class="text-xs text-gray-500">by ${record.approvedBy}</div>
-        </td>
-        <td class="px-4 py-3 text-sm">
-          ${record.returned_at ? `
-            <div>${formatDateTime(record.returned_at)}</div>
-            <div class="text-xs text-gray-500">by ${record.returned_by}</div>
-          ` : '<span class="text-gray-400 italic">Not yet returned</span>'}
-        </td>
-        <td class="px-4 py-3 text-center">
-          <button onclick="editRecord(${record.move_id})" class="btn-secondary text-xs px-3 py-1 mr-1">Edit</button>
-          <button onclick="deleteRecord(${record.move_id})" class="btn-danger text-xs px-3 py-1">Delete</button>
-        </td>
-      `;
-
-      return tr;
-    }
-
-    function getStatusBadge(record) {
-      // This function is no longer needed
-    }
-
-    function updateStats() {
-      const total = historyRecords.length;
-      const returned = historyRecords.filter(r => r.returned_at !== null).length;
-      
-      // Calculate this month's movements
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      const thisMonth = historyRecords.filter(r => {
-        const date = new Date(r.approved_at);
-        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-      }).length;
-
-      document.getElementById('statTotal').textContent = total;
-      document.getElementById('statReturned').textContent = returned;
-      document.getElementById('statThisMonth').textContent = thisMonth;
-    }
-
-    function applyFilters() {
-      const dateFrom = document.getElementById('filterDateFrom').value;
-      const dateTo = document.getElementById('filterDateTo').value;
-      const search = document.getElementById('searchHistory').value.toLowerCase();
-
-      filteredRecords = historyRecords;
-
-      if (dateFrom) {
-        filteredRecords = filteredRecords.filter(r => r.approved_at >= dateFrom);
-      }
-
-      if (dateTo) {
-        filteredRecords = filteredRecords.filter(r => r.approved_at <= dateTo + ' 23:59:59');
-      }
-
-      if (search) {
-        filteredRecords = filteredRecords.filter(r => 
-          r.fileName.toLowerCase().includes(search) ||
-          r.requestedBy.toLowerCase().includes(search) ||
-          r.approvedBy.toLowerCase().includes(search) ||
-          (r.returned_by && r.returned_by.toLowerCase().includes(search))
-        );
-      }
-
-      currentPage = 1;
-      loadHistory();
-    }
-
-    function resetFilters() {
-      document.getElementById('filterDateFrom').value = '';
-      document.getElementById('filterDateTo').value = '';
-      document.getElementById('searchHistory').value = '';
-      filteredRecords = historyRecords;
-      currentPage = 1;
-      loadHistory();
-    }
-
-    function handleRowsPerPageChange() {
-      rowsPerPage = parseInt(document.getElementById('rowsPerPage').value);
-      currentPage = 1;
-      loadHistory();
-    }
-
-    function changePage(direction) {
-      const totalPages = Math.ceil(filteredRecords.length / rowsPerPage);
-      const newPage = currentPage + direction;
-      
-      if (newPage >= 1 && newPage <= totalPages) {
-        currentPage = newPage;
-        loadHistory();
-      }
-    }
-
-    function updatePaginationInfo() {
-      const totalPages = Math.ceil(filteredRecords.length / rowsPerPage);
-      const startIndex = (currentPage - 1) * rowsPerPage + 1;
-      const endIndex = Math.min(startIndex + rowsPerPage - 1, filteredRecords.length);
-      
-      document.getElementById('showingCount').textContent = endIndex;
-      document.getElementById('totalCount').textContent = filteredRecords.length;
-      document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
-      
-      document.getElementById('prevPage').disabled = currentPage === 1;
-      document.getElementById('nextPage').disabled = currentPage === totalPages;
-    }
-
-    function viewDetails(move_id) {
-      const record = historyRecords.find(r => r.move_id === move_id);
-      if (!record) return;
-
-      const modal = document.getElementById('historyModal');
-      const modalBody = document.getElementById('modalBody');
-
-      // Create timeline based on status
-      let timelineHTML = `
-        <div class="space-y-6">
-          <div class="border-l-4 border-blue-500 pl-4 py-2">
-            <p class="text-sm text-gray-600 mb-1">Request Submitted</p>
-            <p class="font-semibold">${formatDateTime(record.move_date)}</p>
-            <p class="text-sm text-gray-500">by ${record.requestedBy}</p>
-          </div>
-          
-          <div class="border-l-4 border-green-500 pl-4 py-2">
-            <p class="text-sm text-gray-600 mb-1">✓ Request Approved</p>
-            <p class="font-semibold">${formatDateTime(record.approved_at)}</p>
-            <p class="text-sm text-gray-500">by ${record.approvedBy}</p>
-          </div>
-      `;
-
-      if (record.taken_out_at) {
-        timelineHTML += `
-          <div class="border-l-4 border-orange-500 pl-4 py-2">
-            <p class="text-sm text-gray-600 mb-1">📤 File Taken Out</p>
-            <p class="font-semibold">${formatDateTime(record.taken_out_at)}</p>
-            <p class="text-sm text-gray-500">by ${record.taken_by}</p>
-          </div>
-        `;
-      }
-
-      if (record.returned_at) {
-        timelineHTML += `
-          <div class="border-l-4 border-green-600 pl-4 py-2">
-            <p class="text-sm text-gray-600 mb-1">✓ File Returned</p>
-            <p class="font-semibold">${formatDateTime(record.returned_at)}</p>
-            <p class="text-sm text-gray-500">by ${record.returned_by}</p>
-            <p class="text-sm text-blue-600 font-semibold mt-1">Duration: ${record.duration}</p>
-          </div>
-        `;
-      } else if (record.status === 'taken-out') {
-        timelineHTML += `
-          <div class="border-l-4 border-orange-400 pl-4 py-2 bg-orange-50 rounded">
-            <p class="text-sm text-orange-700 font-semibold mb-1">⏳ Currently Out</p>
-            <p class="text-sm text-orange-600">${record.duration}</p>
-          </div>
-        `;
-      } else if (record.status === 'approved') {
-        timelineHTML += `
-          <div class="border-l-4 border-yellow-400 pl-4 py-2 bg-yellow-50 rounded">
-            <p class="text-sm text-yellow-700 font-semibold">⏳ Awaiting Pickup</p>
-            <p class="text-xs text-yellow-600">File has been approved but not yet taken out</p>
-          </div>
-        `;
-      }
-
-      timelineHTML += `
-        </div>
-        <div class="mt-6 p-4 bg-gray-50 rounded-lg">
-          <p class="text-sm font-semibold text-gray-700 mb-2">File Information</p>
-          <p class="text-sm text-gray-600">File: <span class="font-semibold">${record.fileName}</span></p>
-          <p class="text-sm text-gray-600">Move ID: <span class="font-semibold">#${record.move_id}</span></p>
-        </div>
-      `;
-
-      modalBody.innerHTML = timelineHTML;
-      modal.classList.add('active');
-    }
-
-    function closeModal() {
-      document.getElementById('historyModal').classList.remove('active');
-    }
-
-    function editRecord(move_id) {
-      const record = historyRecords.find(r => r.move_id === move_id);
-      if (!record) return;
-
-      editingRecordId = move_id;
-      
-      document.getElementById('editFileName').value = record.fileName;
-      document.getElementById('editApprovedDate').value = formatDateTimeForInput(record.approved_at);
-      document.getElementById('editApprovedBy').value = record.approvedBy;
-      document.getElementById('editReturnedDate').value = record.returned_at ? formatDateTimeForInput(record.returned_at) : '';
-      document.getElementById('editReturnedBy').value = record.returned_by || '';
-      
-      document.getElementById('editModal').classList.add('active');
-    }
-
-    function closeEditModal() {
-      editingRecordId = null;
-      document.getElementById('editModal').classList.remove('active');
-    }
-
-    function saveEdit() {
-      const record = historyRecords.find(r => r.move_id === editingRecordId);
-      if (!record) return;
-
-      const approvedDate = document.getElementById('editApprovedDate').value;
-      const approvedBy = document.getElementById('editApprovedBy').value.trim();
-      const returnedDate = document.getElementById('editReturnedDate').value;
-      const returnedBy = document.getElementById('editReturnedBy').value.trim();
-
-      if (!approvedDate) {
-        showToast('Approved date is required', 'error');
-        return;
-      }
-
-      if (!approvedBy) {
-        showToast('Approved by is required', 'error');
-        return;
-      }
-
-      // Update record
-      record.approved_at = formatDateTimeForDB(approvedDate);
-      record.approvedBy = approvedBy;
-      record.returned_at = returnedDate ? formatDateTimeForDB(returnedDate) : null;
-      record.returned_by = returnedBy || null;
-
-      loadHistory();
-      updateStats();
-      closeEditModal();
-      showToast('Record updated successfully!', 'success');
-    }
-
-    function deleteRecord(move_id) {
-      const record = historyRecords.find(r => r.move_id === move_id);
-      if (!record) return;
-
-      deletingRecordId = move_id;
-      document.getElementById('deleteRecordInfo').textContent = `Move ID: #${record.move_id} - ${record.fileName}`;
-      document.getElementById('deleteModal').classList.add('active');
-    }
-
-    function closeDeleteModal() {
-      deletingRecordId = null;
-      document.getElementById('deleteModal').classList.remove('active');
-    }
-
-    function confirmDelete() {
-      const index = historyRecords.findIndex(r => r.move_id === deletingRecordId);
-      if (index > -1) {
-        const record = historyRecords[index];
-        historyRecords.splice(index, 1);
-        
-        // Reset filtered records if the deleted record was in the current filter
-        const filteredIndex = filteredRecords.findIndex(r => r.move_id === deletingRecordId);
-        if (filteredIndex > -1) {
-          filteredRecords.splice(filteredIndex, 1);
-        }
-
-        loadHistory();
-        updateStats();
-        closeDeleteModal();
-        showToast(`Record #${record.move_id} deleted successfully!`, 'success');
-      }
-    }
-
-    function formatDateTimeForInput(dateTimeString) {
-      if (!dateTimeString) return '';
-      // Convert "2024-01-14 15:30:00" to "2024-01-14T15:30"
-      return dateTimeString.replace(' ', 'T').substring(0, 16);
-    }
-
-    function formatDateTimeForDB(dateTimeString) {
-      if (!dateTimeString) return null;
-      // Convert "2024-01-14T15:30" to "2024-01-14 15:30:00"
-      return dateTimeString.replace('T', ' ') + ':00';
-    }
-
-    function exportToCSV() {
-      const headers = ['Move ID', 'File Name', 'Approved Date', 'Approved By', 'Returned Date', 'Returned By'];
-      
-      const rows = filteredRecords.map(r => [
-        r.move_id,
-        r.fileName,
-        formatDateTime(r.approved_at),
-        r.approvedBy,
-        r.returned_at ? formatDateTime(r.returned_at) : 'Not yet returned',
-        r.returned_by || '-'
-      ]);
-
-      let csv = headers.join(',') + '\n';
-      rows.forEach(row => {
-        csv += row.map(cell => `"${cell}"`).join(',') + '\n';
-      });
-
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `file_movement_history_${new Date().toISOString().split('T')[0]}.csv`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-
-      showToast('CSV exported successfully!', 'success');
-    }
-
-    function formatDateTime(dateTimeString) {
-      if (!dateTimeString) return '-';
-      const date = new Date(dateTimeString);
-      return date.toLocaleString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-
-    function showToast(message, type = 'success') {
-      const container = document.getElementById('toastContainer');
-      const toast = document.createElement('div');
-      toast.className = 'toast';
-      
-      const icon = type === 'success' ? '✓' : '✕';
-      const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
-      
-      toast.innerHTML = `
-        <div class="${bgColor} text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">
-          ${icon}
-        </div>
-        <span class="font-medium">${message}</span>
-      `;
-      
-      container.appendChild(toast);
-      
-      setTimeout(() => {
-        toast.style.animation = 'slideIn 0.3s ease-out reverse';
-        setTimeout(() => toast.remove(), 300);
-      }, 3000);
-    }
-
-    function logout() {
-      if (confirm('Are you sure you want to logout?')) {
-        showToast('Logging out...', 'success');
-        setTimeout(() => {
-          window.location.href = 'login.html';
-        }, 1000);
-      }
-    }
-  </script>
+  <!-- JS File -->
+  <script src="/js/admin/history.js"></script>
 
 </body>
 </html>

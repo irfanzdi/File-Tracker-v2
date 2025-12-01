@@ -21,9 +21,7 @@
       <h1 class="text-xl font-bold mb-6 flex items-center gap-2">Staff Panel</h1>
       <nav class="flex flex-col gap-3">
         <a href="staff.html" class="nav-link">Folders & Files</a>
-        <a href="staff_log.html" class="nav-link">Activity Logs</a>
         <a href="request.html" class="nav-active">Request</a>
-        <a href="staff_locations.html" class="nav-link">Cabinet Request</a>
       </nav>
     </div>
     <button id="logoutBtn" class="logout-btn">Logout</button>
@@ -55,8 +53,10 @@
       </section>
 
       <!-- Stats Cards - Inbox Style -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-lg shadow p-4 border-l-4 border-yellow-500 hover:shadow-md transition">
+     <div class="flex gap-4 mb-6">
+
+        <!-- Pending -->
+        <div class="flex-1 bg-white rounded-lg shadow p-4 border-l-4 border-yellow-500 hover:shadow-md transition">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-xs text-gray-600 font-medium uppercase">Pending</p>
@@ -70,7 +70,23 @@
           </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500 hover:shadow-md transition">
+        <!-- Rejected -->
+        <div class="flex-1 bg-white rounded-lg shadow p-4 border-l-4 border-red-500 hover:shadow-md transition">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs text-gray-600 font-medium uppercase">Rejected</p>
+              <p id="statRejected" class="text-3xl font-bold text-red-600 mt-1">0</p>
+            </div>
+            <div class="bg-red-100 rounded-full p-3">
+              <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Approved -->
+        <div class="flex-1 bg-white rounded-lg shadow p-4 border-l-4 border-green-500 hover:shadow-md transition">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-xs text-gray-600 font-medium uppercase">Approved</p>
@@ -84,10 +100,11 @@
           </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500 hover:shadow-md transition">
+        <!-- Taken Out -->
+        <div class="flex-1 bg-white rounded-lg shadow p-4 border-l-4 border-blue-500 hover:shadow-md transition">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-xs text-gray-600 font-medium uppercase">Active</p>
+              <p class="text-xs text-gray-600 font-medium uppercase">Taken Out</p>
               <p id="statTakenOut" class="text-3xl font-bold text-blue-600 mt-1">0</p>
             </div>
             <div class="bg-blue-100 rounded-full p-3">
@@ -98,20 +115,26 @@
           </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-4 border-l-4 border-red-500 hover:shadow-md transition">
+        <!-- Returned -->
+        <div class="flex-1 bg-white rounded-lg shadow p-4 border-l-4 border-emerald-500 hover:shadow-md transition">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-xs text-gray-600 font-medium uppercase">Rejected</p>
-              <p id="statRejected" class="text-3xl font-bold text-red-600 mt-1">0</p>
+              <p class="text-xs text-gray-600 font-medium uppercase">Returned</p>
+              <p id="statReturned" class="text-3xl font-bold text-emerald-600 mt-1">0</p>
             </div>
-            <div class="bg-red-100 rounded-full p-3">
-              <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            <div class="bg-emerald-100 rounded-full p-3">
+              <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
             </div>
           </div>
         </div>
+
       </div>
+
+
+
 
       <!-- Two Column Layout: Notifications + Requests -->
       <div class="grid lg:grid-cols-3 gap-6">
@@ -161,8 +184,8 @@
                   <option value="1">Pending</option>
                   <option value="2">Rejected</option>
                   <option value="3">Approved</option>
-                  <option value="5">Active</option>
-                  <option value="4">Returned</option>
+                  <option value="4">Taken Out</option>
+                  <option value="5">Returned</option>
                 </select>
 
                 <input id="searchRequest" type="text" placeholder="🔍 Search..." class="text-sm border border-gray-300 rounded px-3 py-1.5 flex-1 min-w-[200px] focus:ring-2 focus:ring-blue-500 focus:border-transparent" />

@@ -26,8 +26,8 @@ const STATUS_MAP = {
   1: { label: 'Pending', class: 'status-badge status-pending' },
   2: { label: 'Rejected', class: 'status-badge status-rejected' },
   3: { label: 'Approved', class: 'status-badge status-approved' },
-  4: { label: 'Returned', class: 'status-badge status-returned' },
-  5: { label: 'Taken Out', class: 'status-badge status-taken-out' }
+  4: { label: 'Taken Out', class: 'status-badge status-taken-out' },
+  5: { label: 'Returned', class: 'status-badge status-returned' }
 };
 
 // ============================
@@ -146,7 +146,7 @@ async function loadCurrentUser() {
 async function loadFiles() {
   try {
     debugLog("Fetching all files from API...");
-    const res = await fetch("/api/files");
+    const res = await fetch("/api/files/list");
     debugLog("Files API response status:", res.status);
     
     if (!res.ok) {
@@ -188,59 +188,41 @@ async function loadFiles() {
 
 function populateFileSelect() {
   const sel = el("fileSelect");
-  if (!sel) {
-    console.error("❌ fileSelect element not found in DOM");
-    return;
-  }
-  
+  if (!sel) return;
+
   sel.innerHTML = `<option value="">Choose a file</option>`;
-  
-  debugLog(`Populating file select with ${files.length} files`);
-  
-  files.forEach((f, index) => {
+
+  files.forEach(f => {
     const opt = document.createElement("option");
-    const id = f.file_id ?? f.id;
-    const name = f.file_name ?? f.name ?? f.filename;
-    const folderId = f.folder_id;
-    const folderName = f.folder_name ?? 'Unknown Folder';
-    
-    if (!id) {
-      console.warn(`⚠️ File at index ${index} has no valid ID:`, f);
-      return;
-    }
-    
-    opt.value = id;
-    opt.textContent = `${name} (${folderName})`;
+
+    const fileId = f.file_id ?? f.id;
+    const fileName = f.file_name ?? f.name ?? f.filename ?? "Unnamed File";
+
+    // ✅ Handle nested folder object
+    let folderId = f.folder_id ?? f.folder?.id ?? '';
+    let folderName = f.folder_name ?? f.folder?.name ?? 'No Folder';
+
+    opt.value = fileId;
+    opt.textContent = `${fileName} (${folderName})`;
     opt.dataset.folderId = folderId;
     opt.dataset.folderName = folderName;
+
     sel.appendChild(opt);
-    
-    debugLog(`Added file option: ${opt.textContent} (ID: ${id})`);
   });
 }
+
+
 
 // Auto-fill folder when file is selected
 function autoFillFolder(fileId) {
   const sel = el("fileSelect");
-  const selectedOption = sel.querySelector(`option[value="${fileId}"]`);
-  
-  if (selectedOption) {
-    const folderId = selectedOption.dataset.folderId;
-    const folderName = selectedOption.dataset.folderName;
-    
-    debugLog(`Auto-filling folder: ${folderName} (ID: ${folderId})`);
-    
-    const folderInput = el("folderName");
-    const folderIdInput = el("folderId");
-    
-    if (folderInput) {
-      folderInput.value = folderName;
-    }
-    if (folderIdInput) {
-      folderIdInput.value = folderId;
-    }
-  }
+  const opt = sel.querySelector(`option[value="${fileId}"]`);
+  if (!opt) return;
+
+  el("folderName").value = opt.dataset.folderName || '';
+  el("folderId").value = opt.dataset.folderId || '';
 }
+
 
 function clearFolderField() {
   const folderInput = el("folderName");
@@ -412,8 +394,8 @@ function updateStats(requests) {
       case 1: stats.pending++; break;
       case 2: stats.rejected++; break;
       case 3: stats.approved++; break;
-      case 5: stats.takenOut++; break;
-      case 4: stats.returned++; break;
+      case 4: stats.takenOut++; break;
+      case 5: stats.returned++; break;
     }
   });
 
@@ -440,6 +422,7 @@ async function openRequestModal() {
     debugLog("⚠️ No files loaded, fetching now...");
     await loadFiles();
   }
+  console.log(files);
   
   // Re-populate to ensure fresh
   populateFileSelect();
@@ -524,7 +507,7 @@ async function handleNewRequestSubmit(e) {
     } else {
       const err = await res.json().catch(() => ({}));
       console.error("❌ Create request failed:", err);
-      showToast(err.message || "Failed to create request", "error");
+      showToast(err.message || "Failed to create request, you only can request your department file", "error");
     }
   } catch (err) {
     console.error("❌ Create request error:", err);

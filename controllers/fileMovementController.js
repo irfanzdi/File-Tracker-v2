@@ -195,35 +195,35 @@ exports.getPendingMovements = async (req, res) => {
 exports.getFileMovements = async (req, res) => {
   try {
     console.log("🔍 getFileMovements called");
-    
+
     const [rows] = await db1.query(`
       SELECT 
         fm.*,
-        u.usr_name AS user_name,               -- requested by
-        a.usr_name AS approved_by_name,        -- approver name added
+        u.usr_name AS user_name,          -- requested by
+        a.usr_name AS approved_by_name,   -- approver
         s.status_name
       FROM file_movement fm
       LEFT JOIN infracit_sharedb.users u ON u.user_id = fm.user_id 
-      LEFT JOIN infracit_sharedb.users a ON a.user_id = fm.approve_by  -- join approver
+      LEFT JOIN infracit_sharedb.users a ON a.user_id = fm.approve_by
       LEFT JOIN status s ON s.status_id = fm.status_id
       ORDER BY fm.move_id DESC
     `);
 
     console.log("📊 Query returned rows:", rows.length);
-    console.log("📄 First row:", rows[0]);
 
-    // Get files for each movement
-    // Fetch files
+    // Fetch files with folder info for each movement
     for (const r of rows) {
       const [files] = await db1.query(`
-        SELECT f.file_id, f.file_name
+        SELECT f.file_id, f.file_name, fol.folder_id, fol.folder_name
         FROM file_movement_files m
         JOIN file f ON f.file_id = m.file_id
+        JOIN folder_files ff ON ff.file_id = f.file_id
+        JOIN folder fol ON fol.folder_id = ff.folder_id
         WHERE m.move_id = ?
+        ORDER BY fol.folder_name, f.file_name
       `, [r.move_id]);
 
-      console.log(`📎 Files for move_id ${r.move_id}:`, files.length);
-      r.files = files;
+      r.files = files; // attach files with folder info
     }
 
     console.log("✅ Sending response with", rows.length, "movements");
@@ -231,10 +231,10 @@ exports.getFileMovements = async (req, res) => {
 
   } catch (error) {
     console.error("💥 Error in getFileMovements:", error);
-    console.error("💥 Error stack:", error.stack);
     res.status(500).json({ error: "Internal server error", details: error.message });
   }
 };
+
 
 
 // ====================================
@@ -244,26 +244,31 @@ exports.getFileMovementById = async (req, res) => {
   try {
     const { move_id } = req.params;
 
-    const [rows] = await db1.query(
-      "SELECT fm.*, u.usr_name AS moved_by_name FROM file_movement fm LEFT JOIN infracit_sharedb.users u ON u.user_id = fm.user_id WHERE fm.move_id = ?",
-      [move_id]
-    );
+    const [rows] = await db1.query(`
+      SELECT fm.*, u.usr_name AS moved_by_name
+      FROM file_movement fm
+      LEFT JOIN infracit_sharedb.users u ON u.user_id = fm.user_id
+      WHERE fm.move_id = ?
+    `, [move_id]);
 
-    if (rows.length === 0)
+    if (rows.length === 0) 
       return res.status(404).json({ error: "File movement not found" });
 
     const movement = rows[0];
 
-    // fetch files
-    const [files] = await db1.query(
-      `SELECT f.file_id, f.file_name
-       FROM file_movement_files mm
-       JOIN file f ON f.file_id = mm.file_id
-       WHERE mm.move_id = ?`,
-      [move_id]
-    );
+    // Fetch files with folder info
+    const [files] = await db1.query(`
+      SELECT f.file_id, f.file_name, fol.folder_id, fol.folder_name
+      FROM file_movement_files mm
+      JOIN file f ON f.file_id = mm.file_id
+      JOIN folder_files ff ON ff.file_id = f.file_id
+      JOIN folder fol ON fol.folder_id = ff.folder_id
+      WHERE mm.move_id = ?
+      ORDER BY fol.folder_name, f.file_name
+    `, [move_id]);
 
-    movement.files = files; // attach files
+    movement.files = files;
+
     res.json(movement);
 
   } catch (err) {
@@ -271,6 +276,7 @@ exports.getFileMovementById = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
 
 // ====================================
 // 📌 Update File Movement
@@ -323,28 +329,40 @@ exports.deleteFileMovement = async (req, res) => {
 
 
 exports.approveMovement = async (req, res) => {
+  try {
+    // 1. Get user session
+    const user = requireSession(req, res);
+    if (!user) return; // requireSession already handles response
 
+    // 2. Check role properly
+    if (!["super_admin", "admin"].includes(user.role)) {
+      return res.status(403).json({ error: "Only admin can approve" });
+    }
 
-if (!user || user.role !== "admin") {
-    return res.status(403).json({ message: "Forbidden" });
-}
+    // 3. Get move_id
+    const { move_id } = req.params;
 
-  const user = requireSession(req, res);
-  if (!user) return;
+    // 4. Update the record
+    const [result] = await db1.query(
+      `UPDATE file_movement 
+       SET status_id = 2, approve_by = ?, approved_at = NOW() 
+       WHERE move_id = ?`,
+      [user.id, move_id]
+    );
 
-  if (!["super_admin", "admin"].includes(user.role)) {
-    return res.status(403).json({ error: "Only admin can approve" });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Not found" });
+    }
+
+    // 5. Success
+    res.json({ success: true, message: "Approved" });
+
+  } catch (err) {
+    console.error("Approve error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-
-  const { move_id } = req.params;
-  const [result] = await db1.query(
-    "UPDATE file_movement SET status_id=2, approve_by=?, approved_at=NOW() WHERE move_id=?",
-    [user.id, move_id]
-  );
-
-  if (result.affectedRows === 0) return res.status(404).json({ error: "Not found" });
-  res.json({ success: true, message: "Approved" });
 };
+
 
 exports.rejectMovement = async (req, res) => {
   const user = requireSession(req, res);

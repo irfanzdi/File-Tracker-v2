@@ -259,14 +259,17 @@ function getActionButton(req) {
   switch(req.status_id) {
     case 1:
       return `
-        <button onclick="approveRequest(${req.move_id}, event)" 
-          class="btn-success mr-2">
-          Approve
-        </button>
-        <button onclick="openRejectModal(${req.move_id}, event)" 
-          class="btn-danger">
-          Reject
-        </button>
+        <div class="flex items-center justify-center gap-2">
+          <button onclick="approveRequest(${req.move_id}, event)" 
+            class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition">
+            Approve
+          </button>
+
+          <button onclick="openRejectModal(${req.move_id}, event)" 
+            class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition">
+            Reject
+          </button>
+        </div>
       `;
       
     case 2:
@@ -299,32 +302,24 @@ function getActionButton(req) {
 // ============================
 // 🔹 Admin: Approve Request (Status 1 → 3)
 // ============================
-async function approveRequest(move_id, event) {
-  if (event) event.stopPropagation();
-  
-  const request = requestsData.find(r => r.move_id === move_id);
-  if (!request) return;
-
-  const confirmed = confirm(`Approve this file request?\n\nThis will change status to APPROVED.`);
-  if (!confirmed) return;
-
+async function approveRequest(move_id) {
   try {
-    const res = await fetch(`/api/file-movements/${move_id}/approve`, {
+    const res = await fetch(`/api/file-movements/approve/${move_id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include"
     });
 
-    if (res.ok) {
-      showToast("Request approved successfully!", "success");
-      await loadRequests();
-    } else {
-      const error = await res.json();
-      showToast(error.error || "Failed to approve request", "error");
-    }
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.message || "Failed to approve request");
+
+    alert("Request approved successfully!");
+    await loadRequests();
+
   } catch (err) {
     console.error("Error approving request:", err);
-    showToast("Failed to approve request", "error");
+    alert("Error approving request: " + err.message);
   }
 }
 
