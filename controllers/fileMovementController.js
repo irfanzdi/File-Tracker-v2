@@ -270,10 +270,16 @@ exports.getFileMovementById = async (req, res) => {
   try {
     const { move_id } = req.params;
 
+    // Join both user (moved_by) and approver (approved_by), plus status
     const [rows] = await db1.query(`
-      SELECT fm.*, u.usr_name AS moved_by_name
+      SELECT fm.*, 
+             u.usr_name AS moved_by_name,
+             a.usr_name AS approved_by_name,
+             s.status_name
       FROM file_movement fm
       LEFT JOIN infracit_sharedb.users u ON u.user_id = fm.user_id
+      LEFT JOIN infracit_sharedb.users a ON a.user_id = fm.approve_by
+      LEFT JOIN status s ON s.status_id = fm.status_id
       WHERE fm.move_id = ?
     `, [move_id]);
 
@@ -302,6 +308,7 @@ exports.getFileMovementById = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
 
 
 // ====================================
@@ -354,42 +361,30 @@ exports.deleteFileMovement = async (req, res) => {
 };
 
 
+
 exports.approveMovement = async (req, res) => {
-  try {
-    // 1. Get user session
-    const user = requireSession(req, res);
-    if (!user) return; // requireSession already handles response
+  const user = requireSession(req, res);
+  if (!user) return;
 
-    // 2. Check role properly
-    if (!["super_admin", "admin"].includes(user.role)) {
-      return res.status(403).json({ error: "Only admin can approve" });
-    }
-
-    // 3. Get move_id
-    const { move_id } = req.params;
-
-    // 4. Update the record
-    const [result] = await db1.query(
-      `UPDATE file_movement 
-       SET status_id = 2, approve_by = ?, approved_at = NOW() 
-       WHERE move_id = ?`,
-      [user.id, move_id]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Not found" });
-    }
-
-    // 5. Success
-    res.json({ success: true, message: "Approved" });
-
-  } catch (err) {
-    console.error("Approve error:", err);
-    res.status(500).json({ error: "Internal Server Error" });
+  if (!["super_admin", "admin"].includes(user.role)) {
+    return res.status(403).json({ error: "Only admin can approve" });
   }
+
+  const { move_id } = req.params;
+
+  const [result] = await db1.query(
+    `UPDATE file_movement 
+     SET status_id = 3, approve_by = ?, approved_at = NOW() 
+     WHERE move_id = ?`,
+    [user.id, move_id]
+  );
+
+  if (result.affectedRows === 0) return res.status(404).json({ error: "Not found" });
+  res.json({ success: true, message: "Approved" });
 };
 
 
+// REJECT MOVEMENT
 exports.rejectMovement = async (req, res) => {
   const user = requireSession(req, res);
   if (!user) return;
@@ -399,132 +394,63 @@ exports.rejectMovement = async (req, res) => {
   }
 
   const { move_id } = req.params;
+
   const [result] = await db1.query(
-    "UPDATE file_movement SET status_id=3, approve_by=?, approved_at=NOW() WHERE move_id=?",
+    `UPDATE file_movement 
+     SET status_id = 2, approve_by = ?, approved_at = NOW() 
+     WHERE move_id = ?`,
     [user.id, move_id]
   );
 
-  if (result.affectedRows === 0) return res.status(404).json({ error: "Not found" });
-  res.json({ success: true, message: "Approved" });
-};
-
-exports.rejectMovement = async (req, res) => {
-const user = req.session.user;
-
-if (!user || user.role !== "admin") {
-    return res.status(403).json({ message: "Forbidden" });
-}
-
-  const { move_id } = req.params;
-  const [result] = await db1.query(
-    "UPDATE file_movement SET status_id=2, approve_by=?, approved_at=NOW() WHERE move_id=?",
-    [user.id, move_id]
-  );
   if (result.affectedRows === 0) return res.status(404).json({ error: "Not found" });
   res.json({ success: true, message: "Rejected" });
 };
 
 
-
-
-exports.takeOutFile = async (req, res) => {
-  const user = req.session.user;
-
-  if (!user) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  try {
-    const { move_id } = req.params;
-    
-    // Check if movement exists and is approved
-    const [check] = await db1.query(
-      "SELECT status_id FROM file_movement WHERE move_id = ?",
-      [move_id]
-    );
-
-    if (check.length === 0) {
-      return res.status(404).json({ error: "Movement not found" });
-    }
-
-    if (check[0].status_id !== 3) {
-      return res.status(400).json({ error: "Only approved requests can be marked as taken out" });
-    }
-
-    // Update to status 5 (Take Out)
-    const [result] = await db1.query(
-      "UPDATE file_movement SET status_id=5, taken_at=NOW() WHERE move_id=?",
-      [move_id]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Not found" });
-    }
-
-    res.json({ success: true, message: "File marked as taken out successfully" });
-  } catch (err) {
-    console.error("takeOutFile error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-};
-
-exports.returnFile = async (req, res) => {
-  const user = req.session.user;
-
-  if (!user) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  try {
-    const { move_id } = req.params;
-    
-    // Check if movement exists and is taken out
-    const [check] = await db1.query(
-      "SELECT status_id FROM file_movement WHERE move_id = ?",
-      [move_id]
-    );
-
-    if (check.length === 0) {
-      return res.status(404).json({ error: "Movement not found" });
-    }
-
-    if (check[0].status_id !== 5) {
-      return res.status(400).json({ error: "Only taken out files can be returned" });
-    }
-
-    // Update to status 4 (Return)
-    const [result] = await db1.query(
-      "UPDATE file_movement SET status_id=4, return_at=NOW() WHERE move_id=?",
-      [move_id]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Not found" });
-    }
-
-    res.json({ success: true, message: "File returned successfully" });
-  } catch (err) {
-    console.error("returnFile error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-};
 exports.takeOutFile = async (req, res) => {
   const user = requireSession(req, res);
   if (!user) return;
 
-  // Only allow users from the same department or admin
-  if (user.role === "user") {
-    return res.status(403).json({ error: "Not allowed to take out file" });
-  }
-
   const { move_id } = req.params;
+
+  const [check] = await db1.query(
+    "SELECT status_id FROM file_movement WHERE move_id = ?",
+    [move_id]
+  );
+
+  if (check.length === 0) return res.status(404).json({ error: "Movement not found" });
+  if (check[0].status_id !== 3) return res.status(400).json({ error: "Only approved requests can be taken out" });
+
   const [result] = await db1.query(
-    `UPDATE file_movement SET status_id=4, taken_at=NOW() WHERE move_id=?`,
+    "UPDATE file_movement SET status_id = 5, taken_at = NOW() WHERE move_id = ?",
     [move_id]
   );
 
   if (result.affectedRows === 0) return res.status(404).json({ error: "Not found" });
   res.json({ success: true, message: "File taken out" });
+};
+
+exports.returnFile = async (req, res) => {
+  const user = requireSession(req, res);
+  if (!user) return;
+
+  const { move_id } = req.params;
+
+  const [check] = await db1.query(
+    "SELECT status_id FROM file_movement WHERE move_id = ?",
+    [move_id]
+  );
+
+  if (check.length === 0) return res.status(404).json({ error: "Movement not found" });
+  if (check[0].status_id !== 5) return res.status(400).json({ error: "Only taken out files can be returned" });
+
+  const [result] = await db1.query(
+    "UPDATE file_movement SET status_id = 4, return_at = NOW() WHERE move_id = ?",
+    [move_id]
+  );
+
+  if (result.affectedRows === 0) return res.status(404).json({ error: "Not found" });
+  res.json({ success: true, message: "File returned" });
 };
 
 exports.returnFile = async (req, res) => {

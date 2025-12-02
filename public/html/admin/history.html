@@ -22,7 +22,7 @@
         <a href="admin.html" class="nav-link">Folders & Files</a>
         <a href="activityLog.html" class="nav-link">Activity Logs</a>
         <a href="history.html" class="nav-active">History</a>
-        <a href="locations.html" class="nav-link">Cabinet Request</a>
+        <a href="locations.html" class="nav-link">Locations</a>
       </nav>
     </div>
     <button id="logoutBtn" class="logout-btn">Logout</button>
@@ -66,59 +66,43 @@
         </div>
         <div class="flex flex-wrap gap-3">
           <button id="filterBtn" class="btn-primary">Apply Filter</button>
-          <button id="resetBtn" class="btn-secondary">Reset</button>
-          <button id="exportBtn" class="btn-secondary">Export to CSV</button>
+          <button id="resetBtn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded">
+            Reset</button>
+          <button id="exportCSV" class="btn btn-success">Export CSV</button>
         </div>
       </section>
 
       <!-- History Table -->
-      <section class="card">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="section-title">Movement History</h2>
-          <div class="text-sm text-gray-600">
-            Showing <span id="showingCount">0</span> of <span id="totalCount">0</span> records
+      <section class="stats-card hover-card">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-navy font-semibold">Movement History</h2>
+            <div class="text-sm text-gray-600">
+              Showing <span id="showingCount">0</span> of <span id="totalCount">0</span> records
+            </div>
           </div>
-        </div>
-        <div class="overflow-x-auto">
-          <table id="historyTable" class="min-w-full text-sm">
-            <thead class="bg-gray-100 text-gray-700 uppercase text-xs">
-              <tr>
-                <th class="px-4 py-3 text-center">Move ID</th>
-                <th class="px-4 py-3 text-left">Request Date</th>
-                <th class="px-4 py-3 text-left">Taken Out Date</th>
-                <th class="px-4 py-3 text-left">Returned Date</th>
-                <th class="px-4 py-3 text-left">File Name</th>
-                <th class="px-4 py-3 text-left">Requestor Name</th>
-                <th class="px-4 py-3 text-left">Approved by</th>
-                <th class="px-4 py-3 text-left">Status</th>
-                <th class="px-4 py-3 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="historyTableBody" class="divide-y divide-gray-200">
-              <!-- Data will be loaded dynamically -->
-            </tbody>
-          </table>
-        </div>
-        <p id="noHistory" class="text-gray-500 text-center mt-4 hidden">No history records found.</p>
+          <div class="overflow-x-auto custom-scrollbar">
+            <table id="historyTable" class="min-w-full text-sm text-center">
+              <thead class="bg-blue-800 text-white uppercase text-xs">
+                <tr>
+                  <th class="px-4 py-3 text-left">Move ID</th>
+                  <th class="px-4 py-3 text-left">Request Date</th>
+                  <th class="px-4 py-3 text-left">Taken Out Date</th>
+                  <th class="px-4 py-3 text-left">Returned Date</th>
+                  <th class="px-4 py-3 text-center">File Name</th>
+                  <th class="px-4 py-3 text-center">Requestor Name</th>
+                  <th class="px-4 py-3 text-center">Approved By</th>
+                  <th class="px-4 py-3 text-center">Status</th>
+                  <th class="px-4 py-3 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody" class="divide-y divide-gray-200">
+                <!-- JS will render rows -->
+              </tbody>
+            </table>
+          </div>
+          <p id="noHistory" class="text-gray-500 text-center mt-4 hidden">No history records found.</p>
+        </section>
 
-        <!-- Pagination -->
-        <div class="flex justify-between items-center mt-6 pt-4 border-t">
-          <div class="text-sm text-gray-600">
-            <label for="rowsPerPage" class="mr-2">Rows per page:</label>
-            <select id="rowsPerPage" class="input py-1 px-2">
-              <option value="10">10</option>
-              <option value="25" selected>25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-          </div>
-          <div class="flex gap-2">
-            <button id="prevPage" class="btn-secondary px-3 py-1 text-sm">Previous</button>
-            <span id="pageInfo" class="px-4 py-1 text-sm text-gray-700">Page 1 of 1</span>
-            <button id="nextPage" class="btn-secondary px-3 py-1 text-sm">Next</button>
-          </div>
-        </div>
-      </section>
 
     </div>
   </main>
@@ -138,56 +122,6 @@
     </div>
   </div>
 
-  <!-- Edit Record Modal -->
-  <div id="editModal" class="modal">
-    <div class="modal-content">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-bold">Edit Movement Record</h3>
-        <button id="closeEditModal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-      </div>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">File Name</label>
-          <input id="editFileName" type="text" class="input w-full" readonly />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Approved Date</label>
-          <input id="editApprovedDate" type="datetime-local" class="input w-full" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Approved By</label>
-          <input id="editApprovedBy" type="text" class="input w-full" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Returned Date</label>
-          <input id="editReturnedDate" type="datetime-local" class="input w-full" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Returned By</label>
-          <input id="editReturnedBy" type="text" class="input w-full" />
-        </div>
-      </div>
-      <div class="flex justify-end gap-3 mt-6">
-        <button id="cancelEdit" class="btn-secondary">Cancel</button>
-        <button id="saveEdit" class="btn-primary">Save Changes</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Delete Confirmation Modal -->
-  <div id="deleteModal" class="modal">
-    <div class="modal-content">
-      <h3 class="text-xl font-bold mb-4">Delete Record</h3>
-      <p class="text-gray-600 mb-4">Are you sure you want to delete this movement record? This action cannot be undone.</p>
-      <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-        <p class="text-sm text-red-700" id="deleteRecordInfo"></p>
-      </div>
-      <div class="flex gap-3 justify-end">
-        <button id="cancelDelete" class="btn-secondary">Cancel</button>
-        <button id="confirmDelete" class="btn-danger">Delete Record</button>
-      </div>
-    </div>
-  </div>
 
   <!-- JS File -->
   <script src="/js/admin/history.js"></script>

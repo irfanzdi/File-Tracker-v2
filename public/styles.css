@@ -379,6 +379,14 @@
   text-transform: uppercase;
 }
 
+.status-badges-container {
+    display: flex;        /* Arrange badges in a row */
+    gap: 0.5rem;          /* Space between badges */
+    flex-wrap: nowrap;    /* Keep them in one line */
+    justify-content: center; /* Center badges in cell */
+    align-items: center;  /* Vertical alignment */
+}
+
 .status-out {
   background-color: #dbeafe;
   color: #1e40af;
@@ -405,8 +413,8 @@
 }
 
 .status-taken-out {
-  background: #dcfce7;
-  color: #166534;
+  background: #f6dcfc;
+  color: #5c1665;
 }
 
 .status-available {
@@ -426,8 +434,8 @@
 .input:focus {
   outline: none;
   border-color: #1e3a8a;
-  ring: 2px;
-  ring-color: #1e3a8a;
+  kerning: 2px;
+  lighting-color: #1e3a8a;
 }
 
 /* Button styles - UPDATED TO PREVENT WIDTH ISSUES */
