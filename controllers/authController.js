@@ -42,11 +42,19 @@ exports.login = async (req, res) => {
     }
 
     // 🔹 Determine role based on userlevel
+<<<<<<< Updated upstream
     let role = "staff";
     if ([].includes(user.userlevel)) role = "super_admin";
     else if ([-1,2,11,12,28,36].includes(user.userlevel)) role = "admin";
     else if ([13,14,25,35].includes(user.userlevel)) role = "HR";
     
+=======
+    let role = "user";
+    if ([18].includes(user.userlevel)) role = "super_admin";
+    else if ([2].includes(user.userlevel)) role = "admin";
+    else if ([-1,1].includes(user.userlevel)) role = "staff";
+    else if ([13].includes(user.userlevel)) role = "HR";
+>>>>>>> Stashed changes
 
     // 🔹 Save session info
     req.session.user = {
@@ -85,8 +93,23 @@ exports.logout = (req, res) => {
 };
 
 // ✅ GET CURRENT USER
-exports.getCurrentUser = (req, res) => {
+exports.getCurrentUser = async (req, res) => {
   if (req.session && req.session.user) {
+    // 🔥 Fetch department name
+    let departmentName = null;
+    if (req.session.user.dept) {
+      try {
+        const { db2 } = require("../db");
+        const [[dept]] = await db2.query(
+          "SELECT department FROM tref_department WHERE department_id = ?",
+          [req.session.user.dept]
+        );
+        departmentName = dept ? dept.department : null;
+      } catch (e) {
+        console.error("Error fetching department name:", e);
+      }
+    }
+
     return res.json({
       user_id: req.session.user.id,
       name: req.session.user.name,
@@ -95,6 +118,7 @@ exports.getCurrentUser = (req, res) => {
       level: req.session.user.level,
       levelname: req.session.user.levelname,
       dept: req.session.user.dept,
+      department_name: departmentName,  // 🔥 Add this
       areaoffice: req.session.user.areaoffice
     });
   }

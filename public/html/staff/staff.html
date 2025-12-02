@@ -107,11 +107,20 @@
 
             <!-- Location -->
             <div>
+<<<<<<< Updated upstream
               <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
               <input id="folderLocation" type="text" readonly
                 class="w-full px-4 py-2 bg-blue-50 border border-blue-300 rounded-lg text-navy font-semibold" 
                 placeholder="Not assign" />
               <p class="text-xs text-gray-500 mt-1">✓ HR will help to assign your folder location</p>
+=======
+              <label class="block text-sm font-medium text-gray-700 mb-2">Location *</label>
+              <input id="folderLocationsSelect" readonly
+                class="w-full px-4 py-2 bg-blue-50 border border-blue-300 rounded-lg text-navy font-semibold"
+                 placeholder="Your department" />
+                  <p class="text-xs text-gray-500 mt-1">✓ Automatically assigned by HR</p>
+            </input>
+>>>>>>> Stashed changes
             </div>
 
             <!-- Used For -->
@@ -289,6 +298,7 @@
                 <tr>
                   <th class="px-4 py-3 text-left font-semibold">Serial Number</th>
                   <th class="px-4 py-3 text-left font-semibold">Folder Name</th>
+                  <th class="px-4 py-3 text-left font-semibold">Department</th>
                   <th class="px-4 py-3 text-left font-semibold">Location</th>
                   <th class="px-4 py-3 text-left font-semibold">Department</th>
                   <th class="px-4 py-3 text-center font-semibold">Files Count</th>
@@ -413,6 +423,7 @@
       </div>
     </div>
 
+<<<<<<< Updated upstream
 
   <!-- Edit Folder Modal
   <<div id="editModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -475,6 +486,52 @@
 
 
 
+=======
+  <!-- Edit Folder Modal -->
+<div id="editModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-8">
+    
+    <h2 class="text-xl font-semibold mb-4">Edit Folder</h2>
+
+    <label for="editFolderName">Folder Name</label>
+    <input type="text" id="editFolderName" class="w-full border rounded p-2 mb-4" />
+
+    <label for="editDepartmentSelect">Department</label>
+    <select id="editDepartmentSelect" class="w-full border rounded p-2 mb-4">
+      <option value="">Select Department</option>
+      <option>HR</option>
+      <option>Finance</option>
+      <option>IT</option>
+    </select>
+
+    <label for="editLocationSelect">Location</label>
+    <select id="editLocationSelect" class="w-full border rounded p-2 mb-4">
+      <option value="">Select Location</option>
+      <option>HQ</option>
+      <option>Branch A</option>
+      <option>Branch B</option>
+    </select>
+
+    <div class="flex justify-end gap-2 mt-4">
+      <button onclick="closeEditModal()" class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+      <button id="saveEdit" class="px-4 py-2 bg-blue-600 text-white rounded">Save</button>
+    </div>
+
+  </div>
+</div>
+
+      
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-2xl font-bold">Edit Folder</h3>
+>>>>>>> Stashed changes
 <script src="/js/staff/staff.js"></script>
+
+<!-- Toast Container -->
+<div id="successToast" class="hidden fixed bottom-5 right-5 bg-green-500 text-white px-4 py-3 rounded shadow-lg z-50">
+  <strong id="toastTitle" class="font-bold">Success!</strong>
+  <span id="toastMessage" class="ml-2">This is a message.</span>
+</div>
+
+
 </body>
 </html>

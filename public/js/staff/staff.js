@@ -28,8 +28,7 @@ function escapeHtml(text) {
 // ---------------------------
 let allFolders = [];
 let currentFolderId = null;
-let folderToDelete = null;
-let userDepartment = null; // Store logged-in user's department
+let userDepartment = null; 
 
 // ---------------------------
 // DOM Ready
@@ -40,9 +39,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   // Buttons
-  el("registerFolderBtn")?.addEventListener("click", () => {
+  el("registerFolderBtn")?.addEventListener("click", async () => {
     el("folderFormSection")?.classList.remove("hidden");
     el("fileFormSection")?.classList.add("hidden");
+    // Wait for departments to load before generating serial
+      await getUserDepartment();
+    await loadDepartments();
+      await fillDepartmentField();
     generateSerialNumber();
   });
 
@@ -88,8 +91,6 @@ document.addEventListener("DOMContentLoaded", () => {
   el("closeEditModalBtn")?.addEventListener("click", closeEditModal);
   el("cancelEditBtn")?.addEventListener("click", closeEditModal);
 
-  el("cancelDeleteBtn")?.addEventListener("click", closeDeleteModal);
-  el("confirmDeleteBtn")?.addEventListener("click", confirmDelete);
 
   el("fileFolderSelect")?.addEventListener("change", autoFillFileForm);
 
@@ -114,7 +115,10 @@ document.addEventListener("DOMContentLoaded", loadUserDepartment);
 // Get User Department
 // ---------------------------
 async function getUserDepartment() {
+  const deptDisplay = document.getElementById("userDepartmentDisplay");
+  
   try {
+<<<<<<< Updated upstream
     const res = await fetch("/api/users/me");
     if (res.ok) {
       const userData = await res.json();
@@ -126,14 +130,29 @@ async function getUserDepartment() {
         null;
 
       console.log("User department loaded from API:", userDepartment);
+=======
+    const res = await fetch("/api/auth/me");
+    if (res.ok) {
+      const userData = await res.json();
+      userDepartment = userData.dept;
+      
+      // 🔥 Display department name in UI
+      if (deptDisplay) {
+        deptDisplay.textContent = userData.department_name || "Unknown Department";
+      }
+      
+      console.log("User department loaded:", userDepartment);
+      console.log("Department name:", userData.department_name);
+>>>>>>> Stashed changes
       return;
     }
   } catch (e) {
-    console.warn("Could not fetch user department from API");
+    console.error("Could not fetch user department from API:", e);
   }
 
   // Fallback: localStorage
   const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+<<<<<<< Updated upstream
 
   userDepartment =
     storedUser.department_id ||    // expected
@@ -142,6 +161,15 @@ async function getUserDepartment() {
     null;
 
   console.log("User department loaded from localStorage:", userDepartment);
+=======
+  userDepartment = storedUser.department_id || storedUser.department || null;
+  
+  if (deptDisplay) {
+    deptDisplay.textContent = storedUser.department_name || "Unknown Department";
+  }
+  
+  console.log("User department from localStorage:", userDepartment);
+>>>>>>> Stashed changes
 }
 
 async function showUserDepartmentTopRight() {
@@ -211,10 +239,15 @@ function cancelRegistration() {
 // ---------------------------
 // Serial Number Generation
 // ---------------------------
-function generateSerialNumber() {
+async function generateSerialNumber() {
   const deptSelect = el("folderDepartmentSelect");
   const serialInput = el("folderSerial");
   if (!deptSelect || !serialInput) return;
+
+  // Make sure departments are loaded
+  if (deptSelect.options.length <= 1) {
+    await loadDepartments();
+  }
 
   // STAFF: Pre-select user's department and disable the select
   if (userDepartment) {
@@ -222,11 +255,17 @@ function generateSerialNumber() {
     deptSelect.disabled = true;
     
     // Automatically generate serial for user's department
-    const deptText = deptSelect.options[deptSelect.selectedIndex]?.textContent || "";
+    const selectedOption = deptSelect.options[deptSelect.selectedIndex];
+    if (!selectedOption || !selectedOption.value) {
+      serialInput.value = "Please wait, loading departments...";
+      return;
+    }
+    
+    const deptText = selectedOption.textContent || "";
     const deptCode = deptText.substring(0, 3).toUpperCase();
     const year = new Date().getFullYear();
 
-    generateSerialForDepartment(userDepartment, deptCode, year, serialInput);
+    await generateSerialForDepartment(userDepartment, deptCode, year, serialInput);
   } else {
     serialInput.value = "Department not found";
   }
@@ -249,14 +288,30 @@ async function generateSerialForDepartment(deptId, deptCode, year, serialInput) 
 // ---------------------------
 // Load Departments
 // ---------------------------
+let departmentsLoaded = false;
 async function loadDepartments() {
+  // Avoid loading multiple times
+  if (departmentsLoaded) return;
+  
   const selects = [el("folderDepartmentSelect"), el("editDepartmentSelect"), el("departmentFilter")].filter(Boolean);
   if (!selects.length) return;
 
+  // Set loading state
+  selects.forEach((select, idx) => {
+    select.innerHTML = (idx === 2) ? "<option value=''>Loading...</option>" : "<option value=''>Loading departments...</option>";
+    select.disabled = true;
+  });
+
   try {
     const res = await fetch("/api/departments");
-    if (!res.ok) throw new Error("API failed");
+    if (!res.ok) throw new Error(`API failed: ${res.status}`);
     const data = await res.json();
+    console.log("Departments loaded:", data); // Debug log
+    
+    if (!Array.isArray(data) || data.length === 0) {
+      throw new Error("No departments returned from API");
+    }
+    
     selects.forEach((select, idx) => {
       select.innerHTML = (idx === 2) ? "<option value=''>All Departments</option>" : "<option value=''>Select Department</option>";
       data.forEach(d => {
@@ -265,8 +320,13 @@ async function loadDepartments() {
         opt.textContent = d.department;
         select.appendChild(opt);
       });
+      select.disabled = false;
     });
+    
+    departmentsLoaded = true;
+    
   } catch (e) {
+    console.error("Failed to load departments:", e);
     const fallback = [
       { department_id: 1, department: "HR" },
       { department_id: 2, department: "Finance" },
@@ -283,7 +343,84 @@ async function loadDepartments() {
         opt.textContent = d.department;
         select.appendChild(opt);
       });
+      select.disabled = false;
     });
+    showToast("Using fallback departments (API unavailable)", "error");
+  }
+}
+
+
+
+// ---------------------------
+// Fill Department Readonly Field
+// ---------------------------
+async function fillDepartmentField() {
+  const deptReadonlyInput = el("folderDepartment");
+  if (!deptReadonlyInput) {
+    console.warn("⚠️ folderDepartment input not found");
+    return;
+  }
+
+  console.log("🔍 fillDepartmentField - userDepartment:", userDepartment, "Type:", typeof userDepartment);
+  
+  // Wait for departments to load
+  if (!departmentsLoaded) {
+    console.log("⏳ Waiting for departments to load...");
+    await loadDepartments();
+  }
+  
+  if (userDepartment) {
+    const deptSelect = el("folderDepartmentSelect");
+    
+    if (!deptSelect) {
+      console.error("❌ folderDepartmentSelect not found");
+      deptReadonlyInput.value = "Error: Select not found";
+      return;
+    }
+    
+    // Log all available options
+    console.log("📋 Available options:", Array.from(deptSelect.options).map(opt => ({
+      value: opt.value,
+      text: opt.textContent,
+      valueType: typeof opt.value
+    })));
+    
+    // Try both string and number comparison
+   const selectedOption = Array.from(deptSelect.options)
+  .find(opt => String(opt.value) === String(userDepartment));
+
+
+  if (selectedOption) {
+  deptReadonlyInput.value = selectedOption.textContent;
+} else {
+  deptReadonlyInput.value = "Department not found";
+}
+
+    
+    console.log("🔍 Looking for value:", userDepartment);
+    console.log("🔍 Selected option:", selectedOption);
+    
+    if (selectedOption) {
+      const deptText = selectedOption.textContent || "Unknown Department";
+      deptReadonlyInput.value = deptText;
+      console.log("✅ Readonly department field filled:", deptText);
+    } else {
+      // Fallback: try matching by converting both to strings
+      const allOptions = Array.from(deptSelect.options);
+      const matchedOption = allOptions.find(opt => String(opt.value) === String(userDepartment));
+      
+      if (matchedOption) {
+        deptReadonlyInput.value = matchedOption.textContent;
+        console.log("✅ Found via string comparison:", matchedOption.textContent);
+      } else {
+        deptReadonlyInput.value = "Department not found";
+        console.warn("⚠️ Department option not found for ID:", userDepartment);
+        console.warn("Available values:", allOptions.map(o => o.value));
+      }
+    }
+  } else {
+    deptReadonlyInput.value = "No department assigned";
+    console.warn("⚠️ userDepartment is null/undefined");
   }
 }
 
@@ -450,6 +587,7 @@ function renderTable(folders) {
       //   openEditModal(folderId);
       // };
 
+<<<<<<< Updated upstream
       // const deleteBtn = document.createElement("button");
       // deleteBtn.className = "action-btn action-btn-delete";
       // deleteBtn.textContent = "Delete";
@@ -463,6 +601,12 @@ function renderTable(folders) {
       actionsCell.appendChild(viewBtn);
       // actionsCell.appendChild(editBtn);
       // actionsCell.appendChild(deleteBtn);
+=======
+      
+
+      actionsCell.appendChild(viewBtn);
+      actionsCell.appendChild(editBtn);
+>>>>>>> Stashed changes
     }
   });
 }
@@ -683,50 +827,7 @@ async function saveFolderChanges(e) {
   }
 }
 
-// ---------------------------
-// Delete Modal
-// ---------------------------
-function openDeleteModal(folderId, folderName, folderSerial) {
-  folderToDelete = folderId;
-  el("deleteFolderName").textContent = folderName || "-";
-  el("deleteFolderSerial").textContent = folderSerial || "-";
-  const modal = el("deleteModal");
-  if (modal) {
-    modal.classList.remove("hidden");
-    setTimeout(() => modal.classList.add("modal-show"), 10);
-  }
-}
 
-function closeDeleteModal() {
-  folderToDelete = null;
-  const modal = el("deleteModal");
-  if (!modal) return;
-  modal.classList.remove("modal-show");
-  setTimeout(() => modal.classList.add("hidden"), 200);
-}
-
-async function confirmDelete() {
-  if (!folderToDelete) return;
-  
-  try {
-    const res = await fetch(`/api/folder/${folderToDelete}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("API failed");
-    showToast("Folder deleted successfully!");
-    await loadFolders();
-  } catch (e) {
-    const folders = JSON.parse(localStorage.getItem("folders") || "[]");
-    const idx = folders.findIndex(f => String(f.folder_id ?? f.id) === String(folderToDelete));
-    if (idx !== -1) {
-      folders[idx].is_active = false;
-      localStorage.setItem("folders", JSON.stringify(folders));
-      showToast("Folder deleted (local)!");
-      await loadFolders();
-    } else {
-      showToast("Folder not found", "error");
-    }
-  }
-  closeDeleteModal();
-}
 
 // ---------------------------
 // Create Folder (STAFF: Location empty, department auto-filled)

@@ -106,10 +106,12 @@ function setupEventListeners() {
   el("requestForm")?.addEventListener("submit", handleNewRequestSubmit);
 }
 
-// ============================
+// // ============================
 // 🔹 Load Current User
 // ============================
 async function loadCurrentUser() {
+  const deptDisplay = document.getElementById("userDepartmentDisplay"); // Add this
+  
   try {
     debugLog("Loading current user...");
     const res = await fetch("/api/auth/me", { credentials: "include" });
@@ -118,6 +120,14 @@ async function loadCurrentUser() {
     if (res.ok) {
       currentUser = await res.json();
       debugLog("Current user loaded:", currentUser);
+      
+      // 🔥 Display department name in UI
+      if (deptDisplay && currentUser.department_name) {
+        deptDisplay.textContent = currentUser.department_name;
+      } else if (deptDisplay) {
+        deptDisplay.textContent = "Unknown Department";
+      }
+      
     } else {
       // Use mock user if auth fails
       currentUser = {
@@ -127,6 +137,10 @@ async function loadCurrentUser() {
         email: "test@example.com"
       };
       debugLog("User not authenticated, using mock user:", currentUser);
+      
+      if (deptDisplay) {
+        deptDisplay.textContent = "Unknown Department";
+      }
     }
   } catch (err) {
     console.error("❌ Failed to load user:", err);
@@ -137,6 +151,10 @@ async function loadCurrentUser() {
       email: "test@example.com"
     };
     debugLog("Using mock user due to error:", currentUser);
+    
+    if (deptDisplay) {
+      deptDisplay.textContent = "Unknown Department";
+    }
   }
 }
 
