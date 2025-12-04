@@ -264,11 +264,7 @@ function getActionButton(req) {
   if (req.status_id === 1) {
     if (canHR) {
       // HR should NOT approve/reject, only see disabled Approved
-      return `
-        <button class="px-3 py-1 bg-blue-400 text-white rounded opacity-60 cursor-not-allowed">
-          Approved
-        </button>
-      `;
+      return `    `;
     }
 
     // Normal users → Approve + Reject
@@ -388,14 +384,12 @@ async function confirmReject() {
   if (!request) return;
 
   try {
-    const res = await fetch(`/api/file-movements/${currentRequestId}/reject`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        remark: reason
-      })
-    });
+    const res = await fetch(`/api/file-movements/reject/${currentRequestId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ remark: reason })
+      });
 
     if (res.ok) {
       showToast("Request rejected. File is now available.", "success");
