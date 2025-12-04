@@ -7,6 +7,36 @@ const fs = require("fs");
 const QRCode = require("qrcode");
 const { db1, db2 } = require("../db");
 
+async function generateFolderQRUrl(folder_id) {
+  // 1️⃣ Build URL
+  const baseUrl = "http://localhost:5000/folder-view.html"; // replace 3000 with your actual port
+  const folderUrl = `${baseUrl}?id=${folder_id}`;
+
+  console.log("[QR CREATE] QR URL:", folderUrl);
+
+  // 2️⃣ Ensure QR folder exists
+  const qrDir = path.join(__dirname, "../public/qrcodes");
+  if (!fs.existsSync(qrDir)) fs.mkdirSync(qrDir, { recursive: true });
+
+  // 3️⃣ Generate unique filename
+  const qrFilename = `folder_${folder_id}_${Date.now()}.png`;
+  const qrPath = path.join(qrDir, qrFilename);
+
+  // 4️⃣ Generate QR code
+  await QRCode.toFile(qrPath, folderUrl, {
+    type: "png",
+    width: 400,
+    margin: 4,
+    errorCorrectionLevel: "H"
+  });
+
+  // 5️⃣ Return public URL
+  return `/qrcodes/${qrFilename}`;
+}
+
+
+
+
 exports.createFolder = async (req, res) => {
   try {
     const sessionUser = req.session.user;
@@ -93,7 +123,6 @@ exports.createFolder = async (req, res) => {
 
     const qrFilename = `folder_${Date.now()}.png`;
     const qrPath = path.join(qrDir, qrFilename);
-    console.log("[QR CREATE] QR Path:", qrPath);
 
     await QRCode.toFile(qrPath, qrText, {
       type: "png",
@@ -102,9 +131,7 @@ exports.createFolder = async (req, res) => {
       errorCorrectionLevel: "H"
     });
 
-    const qr_code = `/qrcodes/${qrFilename}`;
-
-    // 🔹 Save QR path
+    const qr_code = await generateFolderQRUrl(folder_id);
     await db1.query("UPDATE folder SET qr_code = ? WHERE folder_id = ?", [qr_code, folder_id]);
 
     // 🔹 Return folder info
@@ -280,22 +307,8 @@ exports.updateFolder = async (req, res) => {
     const { folder_name, department_id, location_id } = req.body;
 
     // Load existing folder
-    const [[existing]] = await db1.query("SELECT serial_num, qr_code FROM folder WHERE folder_id=?", [folder_id]);
+    const [[existing]] = await db1.query("SELECT qr_code FROM folder WHERE folder_id=?", [folder_id]);
     if (!existing) return res.status(404).json({ error: "Folder not found" });
-
-    // Get department & location names
-    const [[dept]] = await db2.query("SELECT department FROM tref_department WHERE department_id=?", [department_id]);
-    const [[loc]] = await db1.query("SELECT location_name FROM locations WHERE location_id=?", [location_id]);
-
-    const departmentName = dept ? dept.department : "N/A";
-    const locationName = loc ? loc.location_name : "N/A";
-
-    // Load existing files to preserve
-    const [existingFiles] = await db1.query(
-      "SELECT f.file_name FROM file f JOIN folder_files ff ON f.file_id = ff.file_id WHERE ff.folder_id=?",
-      [folder_id]
-    );
-    const fileNames = existingFiles.length ? existingFiles.map(f => f.file_name).join(", ") : "No files";
 
     // Update folder info
     await db1.query(
@@ -303,38 +316,12 @@ exports.updateFolder = async (req, res) => {
       [folder_name, department_id, location_id, folder_id]
     );
 
-    // Update QR code (overwrite existing)
-    if (existing.qr_code) {
-      const safe = (v) => (v ? v.toString() : "N/A");
-      const qrText = [
-        `Serial:${safe(existing.serial_num)}`,
-        `Folder:${safe(folder_name)}`,
-        `Dept:${safe(departmentName)}`,
-        `Location:${safe(locationName)}`,
-        `Files:${safe(fileNames)}`
-      ].join('|');
-      console.log("[QR UPDATE] QR Text:", qrText);
-
-      const qrPath = path.resolve(__dirname, "../public", existing.qr_code);
-      const qrDir = path.dirname(qrPath);
-      if (!fs.existsSync(qrDir)) fs.mkdirSync(qrDir, { recursive: true });
-
-      await QRCode.toFile(qrPath, qrText, {
-        type: "png",
-        width: 400,
-        margin: 4,
-        errorCorrectionLevel: "H"
-      });
-      console.log("[QR UPDATE] QR Path:", qrPath, "Size:", fs.statSync(qrPath).size);
-    }
-
     res.json({
       message: "Folder updated successfully",
       folder_id,
       folder_name,
       department_id,
       location_id,
-      files_inside: fileNames,
       qr_code: existing.qr_code
     });
 
@@ -343,8 +330,6 @@ exports.updateFolder = async (req, res) => {
     res.status(500).json({ error: "Server error", details: err.message });
   }
 };
-
-
 
 // =====================================
 // DELETE FOLDER

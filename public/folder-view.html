@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Folder QR Viewer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background-color: #f5f5f5;
+      text-align: center;
+    }
+    .folder-card {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: inline-block;
+      max-width: 400px;
+    }
+    img.qr {
+      width: 250px;
+      margin-top: 1rem;
+    }
+    h2, p {
+      margin: 0.5rem 0;
+    }
+    ul.files {
+      list-style: none;
+      padding: 0;
+      margin: 0.5rem 0;
+    }
+    ul.files li {
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="folder-card">
+    <h2 id="folderName">Folder Name</h2>
+    <p id="serialNum">Serial: N/A</p>
+    <p id="department">Department: N/A</p>
+    <p id="location">Location: N/A</p>
+
+    <h3>Files Inside</h3>
+    <ul id="fileList" class="files">
+      <li>No files</li>
+    </ul>
+
+    <img id="qrImage" class="qr" src="" alt="Folder QR Code">
+  </div>
+
+  <script>
+    // Replace with your API endpoint
+    const folderId = new URLSearchParams(window.location.search).get('id') || '1';
+
+    fetch(`/api/folder/${folderId}`)
+      .then(res => res.json())
+      .then(folder => {
+        document.getElementById("folderName").textContent = folder.folder_name;
+        document.getElementById("serialNum").textContent = "Serial: " + folder.serial_num;
+        document.getElementById("department").textContent = "Department: " + folder.department;
+        document.getElementById("location").textContent = "Location: " + folder.location_name;
+
+        const fileList = document.getElementById("fileList");
+        fileList.innerHTML = '';
+        if (folder.files_inside && folder.files_inside.length > 0) {
+          folder.files_inside.forEach(f => {
+            const li = document.createElement('li');
+            li.textContent = f;
+            fileList.appendChild(li);
+          });
+        } else {
+          fileList.innerHTML = '<li>No files</li>';
+        }
+
+        document.getElementById("qrImage").src = folder.qr_code;
+      })
+      .catch(err => {
+        console.error("Error loading folder:", err);
+        alert("Failed to load folder info");
+      });
+  </script>
+
+</body>
+</html>
