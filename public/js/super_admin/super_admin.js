@@ -3,6 +3,51 @@
 
 console.log("🔧 super_admin.js loading...");
 
+// ==============================
+// LOAD USER INFO
+// ==============================
+async function loadUserInfo() {
+    try {
+        // Check if element exists
+        const nameDisplay = document.getElementById('userNameDisplay');
+        if (!nameDisplay) {
+            console.error("userNameDisplay element not found in HTML!");
+            return;
+        }
+
+        // Try localStorage first
+        const userDataStr = localStorage.getItem('user');
+        if (userDataStr) {
+            const userData = JSON.parse(userDataStr);
+            if (userData.usr_name) {
+                updateUserDisplay(userData.usr_name);
+                return;
+            }
+        }
+
+        // Fetch from API if not in localStorage
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+            const user = await res.json();
+            const userName = user.usr_name || user.username || user.name || 'Admin';
+            updateUserDisplay(userName);
+            // Store for future use
+            localStorage.setItem('user', JSON.stringify(user));
+        } else {
+            updateUserDisplay('Admin');
+        }
+    } catch (err) {
+        console.error('Failed to load user info:', err);
+        updateUserDisplay('Admin');
+    }
+}
+
+function updateUserDisplay(userName) {
+    const nameDisplay = document.getElementById('userNameDisplay');
+    if (nameDisplay) {
+        nameDisplay.textContent = userName;
+    }
+}
 // ---------------------------
 // Helper
 // ---------------------------

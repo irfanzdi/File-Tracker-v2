@@ -1,5 +1,58 @@
 console.log("🚀 activityLog.js loaded!");
 
+// ==============================
+// LOAD USER INFO
+// ==============================
+async function loadUserInfo() {
+    try {
+        // Check if element exists
+        const nameDisplay = document.getElementById('userNameDisplay');
+        if (!nameDisplay) {
+            console.error("userNameDisplay element not found in HTML!");
+            return;
+        }
+
+        // Try localStorage first
+        const userDataStr = localStorage.getItem('user');
+        if (userDataStr) {
+            const userData = JSON.parse(userDataStr);
+            if (userData.usr_name) {
+                updateUserDisplay(userData.usr_name);
+                return;
+            }
+        }
+
+        // Fetch from API if not in localStorage
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+            const user = await res.json();
+            const userName = user.usr_name || user.username || user.name || 'Admin';
+            updateUserDisplay(userName);
+            // Store for future use
+            localStorage.setItem('user', JSON.stringify(user));
+        } else {
+            updateUserDisplay('Admin');
+        }
+    } catch (err) {
+        console.error('Failed to load user info:', err);
+        updateUserDisplay('Admin');
+    }
+}
+
+function updateUserDisplay(userName) {
+    const nameDisplay = document.getElementById('userNameDisplay');
+    if (nameDisplay) {
+        nameDisplay.textContent = userName;
+    }
+}
+
+// Test immediately
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("🚀 DOM Content Loaded - Testing user info...");
+    loadUserInfo();
+});
+
+
 // ============================
 // 🔹 Helper Shortcut
 // ============================
@@ -24,6 +77,64 @@ const STATUS_MAP = {
   5: { label: 'Taken Out (Unavailable)', class: 'status-returned', value: 'taken-out' },
   4: { label: 'Returned (Available)', class: 'status-available', value: 'available' }
 };
+
+// ============================
+// 🔹 Mobile Menu Functions
+// ============================
+function initMobileMenu() {
+  console.log("🔍 Initializing mobile menu...");
+  
+  const mobileMenuBtn = el("mobileMenuBtn");
+  const sidebar = el("sidebar");
+  const sidebarOverlay = el("sidebarOverlay");
+  
+  if (!mobileMenuBtn || !sidebar || !sidebarOverlay) {
+    console.warn("⚠️ Mobile menu elements not found");
+    return;
+  }
+
+  console.log("✅ Mobile menu elements found");
+
+  // Toggle sidebar on hamburger click
+  mobileMenuBtn.addEventListener("click", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("🍔 Mobile menu toggled");
+    sidebar.classList.toggle("active");
+    sidebarOverlay.classList.toggle("active");
+  });
+  
+  // Close sidebar on overlay click
+  sidebarOverlay.addEventListener("click", function() {
+    console.log("📱 Overlay clicked - closing sidebar");
+    sidebar.classList.remove("active");
+    sidebarOverlay.classList.remove("active");
+  });
+  
+  // Close sidebar when nav link clicked on mobile
+  const navLinks = document.querySelectorAll(".sidebar nav a");
+  console.log(`Found ${navLinks.length} nav links`);
+  
+  navLinks.forEach(link => {
+    link.addEventListener("click", function() {
+      if (window.innerWidth <= 768) {
+        console.log("Nav link clicked on mobile - closing sidebar");
+        sidebar.classList.remove("active");
+        sidebarOverlay.classList.remove("active");
+      }
+    });
+  });
+
+  // Close sidebar on window resize if screen becomes large
+  window.addEventListener("resize", function() {
+    if (window.innerWidth > 768) {
+      sidebar.classList.remove("active");
+      sidebarOverlay.classList.remove("active");
+    }
+  });
+
+  console.log("✅ Mobile menu initialized successfully");
+}
 
 // ============================
 // 🔹 Toast Notifications
@@ -69,9 +180,14 @@ if (document.readyState === 'loading') {
 
 async function initApp() {
   console.log("📄 Initializing app...");
+  
+  // Initialize mobile menu FIRST
+  initMobileMenu();
+  
   await loadCurrentUser();
   await loadRequests();
   setupEventListeners();
+  
   console.log("✅ App initialized!");
 }
 
@@ -211,13 +327,13 @@ function renderTable(requests) {
     const actionBtn = getActionButton(req);
 
     row.innerHTML = `
-      <td class="px-4 py-3 text-center font-semibold">#${req.move_id}</td>
-      <td class="px-4 py-3">${escapeHtml(fileNames)}</td>
-      <td class="px-4 py-3">${escapeHtml(requestedBy)}</td>
-      <td class="px-4 py-3">${moveDate}</td>
-      <td class="px-4 py-3">${approvedBy}</td>
-      <td class="px-4 py-3 text-center">${statusBadge}</td>
-      <td class="px-4 py-3 text-center">${actionBtn}</td>
+      <td class="px-2 md:px-4 py-2 md:py-3 text-center font-semibold">#${req.move_id}</td>
+      <td class="px-2 md:px-4 py-2 md:py-3">${escapeHtml(fileNames)}</td>
+      <td class="px-2 md:px-4 py-2 md:py-3 hidden md:table-cell">${escapeHtml(requestedBy)}</td>
+      <td class="px-2 md:px-4 py-2 md:py-3 hidden lg:table-cell">${moveDate}</td>
+      <td class="px-2 md:px-4 py-2 md:py-3 hidden lg:table-cell">${approvedBy}</td>
+      <td class="px-2 md:px-4 py-2 md:py-3 text-center">${statusBadge}</td>
+      <td class="px-2 md:px-4 py-2 md:py-3 text-center">${actionBtn}</td>
     `;
     
     tbody.appendChild(row);
@@ -245,7 +361,7 @@ function getStatusBadge(req, statusConfig) {
     return `
       <div class="flex flex-col items-center gap-1">
         <span class="status-badge ${statusConfig.class}">${statusConfig.label}</span>
-        <span class="text-xs text-gray-500">${approvedAt}</span>
+        <span class="text-xs text-gray-500 hidden lg:inline">${approvedAt}</span>
       </div>
     `;
   }
@@ -264,19 +380,19 @@ function getActionButton(req) {
   if (req.status_id === 1) {
     if (canHR) {
       // HR should NOT approve/reject, only see disabled Approved
-      return `    `;
+      return `<span class="text-gray-400 text-xs">Pending</span>`;
     }
 
     // Normal users → Approve + Reject
     return `
-      <div class="flex items-center justify-center gap-2">
+      <div class="flex items-center justify-center gap-1 md:gap-2 flex-wrap">
         <button onclick="approveRequest(${req.move_id}, event)" 
-          class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition">
+          class="px-2 md:px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition text-xs md:text-sm">
           Approve
         </button>
 
         <button onclick="openRejectModal(${req.move_id}, event)" 
-          class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition">
+          class="px-2 md:px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition text-xs md:text-sm">
           Reject
         </button>
       </div>
@@ -293,8 +409,8 @@ function getActionButton(req) {
     if (canHR) {
       return `
         <button onclick="takeOutFile(${req.move_id}, event)" 
-          class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-          Taken Out
+          class="px-2 md:px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-xs md:text-sm whitespace-nowrap">
+          Take Out
         </button>
       `;
     }
@@ -306,8 +422,8 @@ function getActionButton(req) {
     if (canHR) {
       return `
         <button onclick="returnFile(${req.move_id}, event)" 
-          class="px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700 transition">
-          Return File
+          class="px-2 md:px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700 transition text-xs md:text-sm whitespace-nowrap">
+          Return
         </button>
       `;
     }
@@ -322,12 +438,12 @@ function getActionButton(req) {
   return '<span class="text-gray-400 text-xs">-</span>';
 }
 
-
-
 // ============================
 // 🔹 Admin: Approve Request (Status 1 → 3)
 // ============================
-async function approveRequest(move_id) {
+async function approveRequest(move_id, event) {
+  if (event) event.stopPropagation();
+  
   try {
     const res = await fetch(`/api/file-movements/approve/${move_id}`, {
       method: "PUT",
@@ -339,12 +455,12 @@ async function approveRequest(move_id) {
 
     if (!res.ok) throw new Error(data.message || "Failed to approve request");
 
-    alert("Request approved successfully!");
+    showToast("Request approved successfully!", "success");
     await loadRequests();
 
   } catch (err) {
     console.error("Error approving request:", err);
-    alert("Error approving request: " + err.message);
+    showToast("Error approving request: " + err.message, "error");
   }
 }
 
@@ -406,7 +522,7 @@ async function confirmReject() {
 }
 
 // ============================
-// 🔹 HR: Take Out File (Status 3 → 4)
+// 🔹 HR: Take Out File (Status 3 → 5)
 // ============================
 async function takeOutFile(move_id, event) {
   if (event) event.stopPropagation();
@@ -438,7 +554,7 @@ async function takeOutFile(move_id, event) {
 }
 
 // ============================
-// 🔹 HR: Return File (Status 4 → 5)
+// 🔹 HR: Return File (Status 5 → 4)
 // ============================
 async function returnFile(move_id, event) {
   if (event) event.stopPropagation();
@@ -525,7 +641,7 @@ function applyFilters() {
 
   if (searchFilter) {
     filtered = filtered.filter(r => {
-      const fileName = Array.isArray(req.files) 
+      const fileName = Array.isArray(r.files) 
         ? r.files.map(f => f.file_name).join(" ").toLowerCase()
         : (r.file_name || "").toLowerCase();
       

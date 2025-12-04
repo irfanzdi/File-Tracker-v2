@@ -3,125 +3,326 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Panel | File Tracking System</title>
+  <title>History | File Tracking System</title>
   <link rel="icon" type="image/png" href="/Images/SAFWA-R Logo.png">
   <link rel="stylesheet" href="/styles.css">
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Mobile Sidebar Styles */
+    .mobile-menu-btn {
+      display: none;
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed !important;
+        left: -280px !important;
+        top: 0 !important;
+        height: 100vh !important;
+        width: 280px !important;
+        transition: left 0.3s ease !important;
+        z-index: 1001 !important;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        transform: none !important;
+      }
+      
+      .sidebar.active {
+        left: 0 !important;
+        display: flex !important;
+      }
+      
+      .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding-top: 60px;
+      }
+      
+      .mobile-menu-btn {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        z-index: 1000;
+        background: #1e3a8a;
+        color: white;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      }
+      
+      .mobile-menu-btn:hover {
+        background: #1e40af;
+      }
+      
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        backdrop-filter: blur(2px);
+      }
+      
+      .sidebar-overlay.active {
+        display: block;
+      }
+
+      /* Mobile table improvements */
+      #historyTable {
+        font-size: 0.75rem;
+      }
+
+      #historyTable th,
+      #historyTable td {
+        padding: 0.5rem 0.25rem;
+      }
+
+      /* Stats grid on mobile */
+      .grid.grid-cols-1 {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    @media (min-width: 769px) {
+      .mobile-menu-btn {
+        display: none !important;
+      }
+      
+      .sidebar-overlay {
+        display: none !important;
+      }
+    }
+
+    /* Status badges */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-approved {
+      background: #dbeafe;
+      color: #1e3a8a;
+    }
+
+    .status-returned {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-available {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 0.75rem;
+      padding: 2rem;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Timeline styles */
+    .timeline-item {
+      position: relative;
+      padding-left: 2rem;
+      padding-bottom: 1.5rem;
+      border-left: 2px solid #e5e7eb;
+    }
+
+    .timeline-item:last-child {
+      border-left: 2px solid transparent;
+      padding-bottom: 0;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -0.5rem;
+      top: 0.25rem;
+      width: 1rem;
+      height: 1rem;
+      border-radius: 50%;
+      background: #1e3a8a;
+      border: 2px solid white;
+    }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
+
+  <!-- Mobile Menu Button -->
+  <button class="mobile-menu-btn" id="mobileMenuBtn">
+    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
   <!-- Toast Container -->
   <div id="toastContainer"></div>
 
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div>
-      <img src="/images/SAFWA-R Logo.png" alt="Logo" class="w-20 mx-auto mb-8">
-      <h1 class="text-xl font-bold mb-6 flex items-center gap-2">Admin Panel | File Tracker</h1>
-      <nav class="flex flex-col gap-3">
-        <a href="admin.html" class="nav-link">Folders & Files</a>
-        <a href="activityLog.html" class="nav-link">Activity Logs</a>
-        <a href="history.html" class="nav-active">History</a>
-        <a href="locations.html" class="nav-link">Locations</a>
-      </nav>
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div>
+    <img src="/images/SAFWA-R Logo.png" alt="Logo" class="w-20 mx-auto mb-6">
+    
+    <div class="mb-6 text-center border-b border-gray-200 pb-4">
+      <h1 class="text-2xl font-bold text-black mb-2">Admin Panel</h1>
+      <p class="text-base text-white">
+        Welcome, <span id="userNameDisplay" class="font-semibold">Admin</span>
+      </p>
     </div>
-    <button id="logoutBtn" class="logout-btn">Logout</button>
-  </aside>
+    
+    <nav class="flex flex-col gap-3">
+      <a href="admin.html" class="nav-link"> Folders & Files</a>
+      <a href="activityLog.html" class="nav-link"> Activity Logs</a>
+      <a href="history.html" class="nav-active"> History</a>
+      <a href="locations.html" class="nav-link"> Locations</a>
+    </nav>
+  </div>
+  
+  <button id="logoutBtn" class="logout-btn">Logout</button>
+</aside>
+
+<style>
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sidebar h1 {
+    font-size: 1.125rem;
+  }
+  
+  .sidebar .text-sm {
+    font-size: 0.75rem;
+  }
+}
+</style>
 
   <!-- Main Content -->
   <main class="main-content fade-in">
-    <div class="max-w-7xl mx-auto w-full">
+    <div class="max-w-7xl mx-auto w-full px-4 md:px-6">
 
       <!-- Page Header -->
-      <section class="card mb-8">
+      <section class="card mb-6 md:mb-8">
         <div>
-          <h2 class="section-title">Complete File Movement History</h2>
+          <h2 class="section-title text-lg md:text-xl"> Complete File Movement History</h2>
           <p class="text-gray-600 text-sm">Archive of all file movements with approval and return records</p>
         </div>
       </section>
 
       <!-- Stats Section -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        <div class="card p-4 bg-blue-50 border-l-4 border-blue-500">
-          <p class="text-blue-700 text-sm font-semibold">Total Records</p>
-          <p id="statTotal" class="text-2xl font-bold text-blue-900">0</p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
+        <div class="card p-3 md:p-4 bg-blue-50 border-l-4 border-blue-500">
+          <p class="text-blue-700 text-xs md:text-sm font-semibold">Total Records</p>
+          <p id="statTotal" class="text-xl md:text-2xl font-bold text-blue-900">0</p>
         </div>
-        <div class="card p-4 bg-green-50 border-l-4 border-green-500">
-          <p class="text-green-700 text-sm font-semibold">Returned Files</p>
-          <p id="statReturned" class="text-2xl font-bold text-green-900">0</p>
+        <div class="card p-3 md:p-4 bg-green-50 border-l-4 border-green-500">
+          <p class="text-green-700 text-xs md:text-sm font-semibold">Returned Files</p>
+          <p id="statReturned" class="text-xl md:text-2xl font-bold text-green-900">0</p>
         </div>
-        <div class="card p-4 bg-purple-50 border-l-4 border-purple-500">
-          <p class="text-purple-700 text-sm font-semibold">This Month</p>
-          <p id="statThisMonth" class="text-2xl font-bold text-purple-900">0</p>
+        <div class="card p-3 md:p-4 bg-purple-50 border-l-4 border-purple-500">
+          <p class="text-purple-700 text-xs md:text-sm font-semibold">This Month</p>
+          <p id="statThisMonth" class="text-xl md:text-2xl font-bold text-purple-900">0</p>
         </div>
       </div>
 
       <!-- Filter Section -->
-      <section class="card mb-8">
-        <h3 class="font-semibold mb-4 text-gray-700">Filter History</h3>
-        <div class="flex flex-wrap gap-4 mb-4">
-          <input id="filterDateFrom" type="date" placeholder="Date From" class="input w-full sm:w-52" />
-          <input id="filterDateTo" type="date" placeholder="Date To" class="input w-full sm:w-52" />
-          <input id="searchHistory" type="text" placeholder="Search by file name or user..." class="input w-full sm:w-64" />
+      <section class="card mb-6 md:mb-8">
+        <h3 class="font-semibold mb-4 text-gray-700 text-sm md:text-base">🔍 Filter History</h3>
+        <div class="flex flex-col md:flex-row flex-wrap gap-3 md:gap-4 mb-4">
+          <input id="filterDateFrom" type="date" placeholder="Date From" class="input w-full md:w-52 text-sm md:text-base" />
+          <input id="filterDateTo" type="date" placeholder="Date To" class="input w-full md:w-52 text-sm md:text-base" />
+          <input id="searchHistory" type="text" placeholder="Search by file name or user..." class="input w-full md:w-64 text-sm md:text-base" />
         </div>
-        <div class="flex flex-wrap gap-3">
-          <button id="filterBtn" class="btn-primary">Apply Filter</button>
-          <button id="resetBtn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded">
-            Reset</button>
-          <button id="exportCSV" class="btn btn-success">Export CSV</button>
+        <div class="flex flex-col md:flex-row flex-wrap gap-3">
+          <button id="filterBtn" class="btn-primary w-full md:w-auto text-sm md:text-base">Apply Filter</button>
+          <button id="resetBtn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded w-full md:w-auto text-sm md:text-base">
+            Reset
+          </button>
+          <button id="exportCSV" class="btn btn-success w-full md:w-auto text-sm md:text-base">📥 Export CSV</button>
         </div>
       </section>
 
       <!-- History Table -->
       <section class="stats-card hover-card">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-navy font-semibold">Movement History</h2>
-            <div class="text-sm text-gray-600">
-              Showing <span id="showingCount">0</span> of <span id="totalCount">0</span> records
-            </div>
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-3">
+          <h2 class="text-navy font-semibold text-base md:text-lg">Movement History</h2>
+          <div class="text-xs md:text-sm text-gray-600">
+            Showing <span id="showingCount">0</span> of <span id="totalCount">0</span> records
           </div>
-          <div class="overflow-x-auto custom-scrollbar">
-            <table id="historyTable" class="min-w-full text-sm text-center">
-              <thead class="bg-blue-800 text-white uppercase text-xs">
-                <tr>
-                  <th class="px-4 py-3 text-left">Move ID</th>
-                  <th class="px-4 py-3 text-left">Request Date</th>
-                  <th class="px-4 py-3 text-left">Taken Out Date</th>
-                  <th class="px-4 py-3 text-left">Returned Date</th>
-                  <th class="px-4 py-3 text-center">File Name</th>
-                  <th class="px-4 py-3 text-center">Requestor Name</th>
-                  <th class="px-4 py-3 text-center">Approved By</th>
-                  <th class="px-4 py-3 text-center">Status</th>
-                  <th class="px-4 py-3 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody id="historyTableBody" class="divide-y divide-gray-200">
-                <!-- JS will render rows -->
-              </tbody>
-            </table>
-          </div>
-          <p id="noHistory" class="text-gray-500 text-center mt-4 hidden">No history records found.</p>
-        </section>
-
+        </div>
+        <div class="overflow-x-auto custom-scrollbar rounded-lg border border-gray-200">
+          <table id="historyTable" class="min-w-full text-xs md:text-sm text-center">
+            <thead class="bg-blue-800 text-white uppercase text-xs">
+              <tr>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-left">ID</th>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-left hidden lg:table-cell">Request Date</th>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-left hidden xl:table-cell">Taken Out</th>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-left hidden xl:table-cell">Returned</th>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-center">File Name</th>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-center hidden md:table-cell">Requestor</th>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-center hidden lg:table-cell">Approved By</th>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-center">Status</th>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody" class="divide-y divide-gray-200 bg-white">
+              <!-- JS will render rows -->
+            </tbody>
+          </table>
+        </div>
+        <p id="noHistory" class="text-gray-500 text-center mt-4 hidden text-sm">📂 No history records found.</p>
+      </section>
 
     </div>
   </main>
 
-  <!-- Modals -->
   <!-- History Details Modal -->
   <div id="historyModal" class="modal">
     <div class="modal-content">
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-bold">Movement Timeline</h3>
+        <h3 class="text-lg md:text-xl font-bold">📋 Movement Timeline</h3>
         <button id="closeModal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
       </div>
       <div id="modalBody" class="space-y-4"></div>
       <div class="flex justify-end mt-6">
-        <button id="closeModalBtn" class="btn-secondary">Close</button>
+        <button id="closeModalBtn" class="btn-secondary text-sm md:text-base">Close</button>
       </div>
     </div>
   </div>
-
 
   <!-- JS File -->
   <script src="/js/admin/history.js"></script>

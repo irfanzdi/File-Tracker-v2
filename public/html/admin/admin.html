@@ -10,6 +10,80 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <style>
+    /* Mobile Sidebar Styles */
+    .mobile-menu-btn {
+      display: none;
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed !important;
+        left: -280px !important;
+        top: 0 !important;
+        height: 100vh !important;
+        width: 280px !important;
+        transition: left 0.3s ease !important;
+        z-index: 1001 !important;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        transform: none !important;
+      }
+      
+      .sidebar.active {
+        left: 0 !important;
+        display: flex !important;
+      }
+      
+      .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding-top: 60px;
+      }
+      
+      .mobile-menu-btn {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        z-index: 1000;
+        background: #1e3a8a;
+        color: white;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      }
+      
+      .mobile-menu-btn:hover {
+        background: #1e40af;
+      }
+      
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        backdrop-filter: blur(2px);
+      }
+      
+      .sidebar-overlay.active {
+        display: block;
+      }
+    }
+    
+    @media (min-width: 769px) {
+      .mobile-menu-btn {
+        display: none !important;
+      }
+      
+      .sidebar-overlay {
+        display: none !important;
+      }
+    }
+
     /* Toast animation */
     .animate-slideIn {
       animation: slideIn 0.3s ease-out;
@@ -28,7 +102,7 @@
 
     /* Modal animations */
     .modal { 
-  transition: opacity 0.2s ease; 
+      transition: opacity 0.2s ease; 
     }
     .modal.hidden { 
       display: none; 
@@ -247,42 +321,62 @@
 </head>
 <body class="bg-gray-50 text-gray-800">
 
+  <!-- Mobile Menu Button -->
+  <button class="mobile-menu-btn" id="mobileMenuBtn">
+    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div>
-      <img src="/images/SAFWA-R Logo.png" alt="Logo" class="w-20 mx-auto mb-8">
-      <h1 class="text-xl font-bold mb-6 flex items-center gap-2">Admin Panel | File Tracker</h1>
-      <nav class="flex flex-col gap-3">
-        <a href="admin.html" class="nav-active">Folders & Files</a>
-        <a href="activityLog.html" class="nav-link">Activity Logs</a>
-        <a href="history.html" class="nav-link">History</a>
-        <a href="locations.html" class="nav-link">Locations</a>
-      </nav>
+<aside class="sidebar" id="sidebar">
+  <div>
+    <img src="/images/SAFWA-R Logo.png" alt="Logo" class="w-20 mx-auto mb-6">
+    
+    <div class="mb-6 text-center border-b border-gray-200 pb-4">
+      <h1 class="text-2xl font-bold text-black mb-2">Admin Panel</h1>
+      <p class="text-base text-white">
+        Welcome, <span id="userNameDisplay" class="font-semibold">Admin</span>
+      </p>
     </div>
-    <button id="logoutBtn" class="logout-btn">Logout</button>
-  </aside>
+    
+    <nav class="flex flex-col gap-3">
+      <a href="admin.html" class="nav-active"> Folders & Files</a>
+      <a href="activityLog.html" class="nav-link"> Activity Logs</a>
+      <a href="history.html" class="nav-link"> History</a>
+      <a href="locations.html" class="nav-link"> Locations</a>
+    </nav>
+  </div>
+  
+  <button id="logoutBtn" class="logout-btn">Logout</button>
+</aside>
 
   <!-- Main Content -->
   <main class="main-content fade-in">
-    <div class="content-wrapper max-w-7xl mx-auto w-full">
+    <div class="content-wrapper max-w-7xl mx-auto w-full px-4 md:px-6">
 
       <!-- Page Header with Stats -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-navy mb-2"> File Management Dashboard</h1>
-        <p class="text-gray-600">View and manage all folders and files across departments</p>
+      <div class="mb-6 md:mb-8">
+        <h1 class="text-2xl md:text-3xl font-bold text-navy mb-2">📁 File Management Dashboard</h1>
+        <p class="text-sm md:text-base text-gray-600">View and manage all folders and files across departments</p>
       </div>
 
       <!-- Registration Type Selection -->
       <section class="card mb-6">
-        <h2 class="section-title text-center">Registration Management</h2>
-        <div class="flex gap-4 justify-center">
-          <button id="registerFolderBtn" class="btn-navy px-8 py-4 rounded-lg transition font-semibold shadow-md hover-card">
+        <h2 class="section-title text-center text-lg md:text-xl">Registration Management</h2>
+        <div class="flex flex-col md:flex-row gap-3 md:gap-4 justify-center">
+          <button id="registerFolderBtn" class="btn-navy px-6 md:px-8 py-3 md:py-4 rounded-lg transition font-semibold shadow-md hover-card text-sm md:text-base">
             📁 Register Folder
           </button>
-          <button id="registerFileBtn" class="bg-green-900 text-white px-8 py-4 rounded-lg hover:bg-gray-700 transition font-semibold shadow-md hover-card">
+          <button id="registerFileBtn" class="bg-green-900 text-white px-6 md:px-8 py-3 md:py-4 rounded-lg hover:bg-gray-700 transition font-semibold shadow-md hover-card text-sm md:text-base">
             📄 Register File
           </button>
-          <button id="existingFileBtn" class="bg-orange-600 text-white px-8 py-4 rounded-lg hover:bg-gray-700 transition font-semibold shadow-md hover-card">
+          <button id="existingFileBtn" class="bg-orange-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-lg hover:bg-gray-700 transition font-semibold shadow-md hover-card text-sm md:text-base">
             📄 Existing File
           </button>
         </div>
@@ -291,7 +385,7 @@
       <!-- Register Folder Form (Initially Hidden) -->
       <section id="folderFormSection" class="card mb-6 hidden">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="section-title">Register New Folder</h2>
+          <h2 class="section-title text-lg md:text-xl">📁 Register New Folder</h2>
         </div>
 
         <form id="folderForm" class="space-y-4">
@@ -300,7 +394,7 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Serial Number</label>
               <input id="folderSerial" type="text" readonly 
-                class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-600" 
+                class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 text-sm md:text-base" 
                 placeholder="Auto-generated: SGV/2025/DEPT/001" />
             </div>
 
@@ -308,7 +402,7 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Folder Title *</label>
               <input id="folderTitle" type="text" required
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent" 
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent text-sm md:text-base" 
                 placeholder="Enter folder name" />
             </div>
 
@@ -316,7 +410,7 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Department *</label>
               <select id="folderDepartmentSelect" required
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent">
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent text-sm md:text-base">
                 <option value="">Select Department</option>
               </select>
             </div>
@@ -325,7 +419,7 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Location *</label>
               <select id="folderLocationsSelect" required
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent">
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent text-sm md:text-base">
                 <option value="">Select Location</option>
               </select>
             </div>
@@ -334,17 +428,17 @@
             <div class="md:col-span-2">
               <label class="block text-sm font-medium text-gray-700 mb-2">Used For (Optional)</label>
               <textarea id="folderUsedFor" rows="2"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent" 
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent text-sm md:text-base" 
                 placeholder="Describe the purpose of this folder"></textarea>
             </div>
           </div>
 
-          <div class="flex justify-end gap-3 pt-4">
+          <div class="flex flex-col md:flex-row justify-end gap-3 pt-4">
             <button type="button" id="cancelFolderBtn" 
-              class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+              class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm md:text-base">
               Cancel
             </button>
-            <button type="submit" class="btn-navy px-6 py-2 rounded-lg transition">
+            <button type="submit" class="btn-navy px-6 py-2 rounded-lg transition text-sm md:text-base">
               💾 Save Folder
             </button>
           </div>
@@ -354,7 +448,7 @@
       <!-- Register File Form (Initially Hidden) -->
       <section id="fileFormSection" class="card mb-6 hidden">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="section-title">Register New File</h2>
+          <h2 class="section-title text-lg md:text-xl">📄 Register New File</h2>
         </div>
 
         <form id="fileForm" class="space-y-4">
@@ -363,7 +457,7 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">File Name *</label>
               <input id="fileName" type="text" required
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent" 
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent text-sm md:text-base" 
                 placeholder="Enter file name" />
             </div>
 
@@ -371,7 +465,7 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Assign to Folder *</label>
               <select id="fileFolderSelect" required
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent">
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent text-sm md:text-base">
                 <option value="">Select Folder</option>
               </select>
             </div>
@@ -380,7 +474,7 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
               <input id="fileDepartment" type="text" readonly
-                class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-600" 
+                class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 text-sm md:text-base" 
                 placeholder="Auto-filled from folder" />
             </div>
 
@@ -388,7 +482,7 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
               <input id="fileLocation" type="text" readonly
-                class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-600" 
+                class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 text-sm md:text-base" 
                 placeholder="Auto-filled from folder" />
             </div>
 
@@ -396,17 +490,17 @@
             <div class="md:col-span-2">
               <label class="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
               <textarea id="fileDescription" rows="2"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent" 
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent text-sm md:text-base" 
                 placeholder="Add any additional notes"></textarea>
             </div>
           </div>
 
-          <div class="flex justify-end gap-3 pt-4">
+          <div class="flex flex-col md:flex-row justify-end gap-3 pt-4">
             <button type="button" id="cancelFileBtn" 
-              class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+              class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm md:text-base">
               Cancel
             </button>
-            <button type="submit" class="bg-green-900 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition">
+            <button type="submit" class="bg-green-900 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition text-sm md:text-base">
               💾 Save File
             </button>
           </div>
@@ -414,70 +508,69 @@
       </section>
 
       <!-- Register Existing File Form (Initially Hidden) -->
-        <section id="existingFormSection" class="card mb-6 hidden">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="section-title">Register Existing File</h2>
+      <section id="existingFormSection" class="card mb-6 hidden">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="section-title text-lg md:text-xl">📄 Register Existing File</h2>
+        </div>
+
+        <form id="existingForm" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <!-- Folder Selection -->
+            <div>
+              <label for="existingFileFolderSelect" class="block text-sm font-medium text-gray-700 mb-2">Assign to Folder *</label>
+              <select id="existingFileFolderSelect" required
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent bg-white text-sm md:text-base">
+                <option value="">Select Folder</option>
+              </select>
+            </div>
+
+            <!-- Existing File Selection -->
+            <div>
+              <label for="existingFileSelect" class="block text-sm font-medium text-gray-700 mb-2">File Name *</label>
+              <select id="existingFileSelect" required
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent bg-white text-sm md:text-base">
+                <option value="">Select File</option>
+              </select>
+            </div>
+
+            <!-- Department (readonly, autofilled) -->
+            <div>
+              <label for="existingFileDepartment" class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+              <input type="text" id="existingFileDepartment" readonly placeholder="Auto-filled from folder"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 focus:ring-2 focus:ring-blue-900 focus:border-transparent text-sm md:text-base" />
+            </div>
+
+            <!-- Location (readonly, autofilled) -->
+            <div>
+              <label for="existingFileLocation" class="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <input type="text" id="existingFileLocation" readonly placeholder="Auto-filled from folder"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 focus:ring-2 focus:ring-blue-900 focus:border-transparent text-sm md:text-base" />
+            </div>
+
+            <!-- Description (Optional) -->
+            <div class="md:col-span-2">
+              <label for="existingFileDescription" class="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
+              <textarea id="existingFileDescription" rows="2" placeholder="Add any additional notes"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent bg-white text-sm md:text-base"></textarea>
+            </div>
+
           </div>
 
-          <form id="existingForm" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Buttons -->
+          <div class="flex flex-col md:flex-row justify-end gap-3 pt-4">
+            <button type="button" id="cancelExistingBtn"
+              class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm md:text-base">Cancel</button>
+            <button type="submit"
+              class="bg-orange-600 hover:bg-orange-600 text-white px-6 py-2 rounded-lg transition text-sm md:text-base">💾 Save File</button>
+          </div>
 
-              <!-- Folder Selection -->
-              <div>
-                <label for="existingFileFolderSelect" class="block text-sm font-medium text-gray-700 mb-2">Assign to Folder *</label>
-                <select id="existingFileFolderSelect" required
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent bg-white">
-                  <option value="">Select Folder</option>
-                </select>
-              </div>
-
-              <!-- Existing File Selection -->
-              <div>
-                <label for="existingFileSelect" class="block text-sm font-medium text-gray-700 mb-2">File Name *</label>
-                <select id="existingFileSelect" required
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent bg-white">
-                  <option value="">Select File</option>
-                </select>
-              </div>
-
-              <!-- Department (readonly, autofilled) -->
-              <div>
-                <label for="existingFileDepartment" class="block text-sm font-medium text-gray-700 mb-2">Department</label>
-                <input type="text" id="existingFileDepartment" readonly placeholder="Auto-filled from folder"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 focus:ring-2 focus:ring-blue-900 focus:border-transparent" />
-              </div>
-
-              <!-- Location (readonly, autofilled) -->
-              <div>
-                <label for="existingFileLocation" class="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                <input type="text" id="existingFileLocation" readonly placeholder="Auto-filled from folder"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 focus:ring-2 focus:ring-blue-900 focus:border-transparent" />
-              </div>
-
-              <!-- Description (Optional) -->
-              <div class="md:col-span-2">
-                <label for="existingFileDescription" class="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
-                <textarea id="existingFileDescription" rows="2" placeholder="Add any additional notes"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent bg-white"></textarea>
-              </div>
-
-            </div>
-
-            <!-- Buttons -->
-            <div class="flex justify-end gap-3 pt-4">
-              <button type="button" id="cancelExistingBtn"
-                class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">Cancel</button>
-              <button type="submit"
-                class="bg-orange-600 hover:bg-orange-600 text-white px-6 py-2 rounded-lg transition">💾 Save File</button>
-            </div>
-
-          </form>
-        </section>
-
+        </form>
+      </section>
 
       <!-- Advanced Filters Section -->
       <section class="card mb-6">
-        <h2 class="section-title mb-6">🔍 Search & Filters</h2>
+        <h2 class="section-title mb-6 text-lg md:text-xl">🔍 Search & Filters</h2>
         
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
           <!-- Search Input -->
@@ -488,7 +581,7 @@
                 type="text"
                 id="searchInput"
                 placeholder="folder name or serial number"
-                class="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent transition"
+                class="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent transition text-sm md:text-base"
               />
               <button id="searchBtn" class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-navy text-white rounded-md hover:bg-blue-900 transition text-sm">
                 Search
@@ -500,7 +593,7 @@
           <div class="md:col-span-3">
             <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
             <select id="departmentFilter" 
-              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent transition">
+              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent transition text-sm md:text-base">
               <option value="">All Departments</option>
             </select>
           </div>
@@ -509,7 +602,7 @@
           <div class="md:col-span-3">
             <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
             <select id="locationFilter" 
-              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent transition">
+              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent transition text-sm md:text-base">
               <option value="">All Locations</option>
             </select>
           </div>
@@ -517,7 +610,7 @@
           <!-- Reset Button -->
           <div class="md:col-span-1 flex items-end">
             <button id="resetFiltersBtn" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium" title="Reset filters">
-               Reset
+              🔄 Reset
             </button>
           </div>
         </div>
@@ -531,17 +624,17 @@
         </div>
 
         <!-- Results Summary -->
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <p id="resultsCount" class="text-sm text-gray-600">
             Showing <span class="font-semibold text-navy">0</span> folders
           </p>
           
           <!-- Export/Actions -->
           <div class="flex gap-2">
-            <button id="exportCSVBtn" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium flex items-center gap-2">
+            <button id="exportCSVBtn" class="px-3 md:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-xs md:text-sm font-medium flex items-center gap-2">
               📥 Export CSV
             </button>
-            <button id="printTableBtn" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium flex items-center gap-2">
+            <button id="printTableBtn" class="px-3 md:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-xs md:text-sm font-medium flex items-center gap-2">
               🖨️ Print
             </button>
           </div>
@@ -550,8 +643,8 @@
 
       <!-- All Folders Table -->
       <section class="card">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="section-title">📁 All Folders</h2>
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+          <h2 class="section-title text-lg md:text-xl">📁 All Folders</h2>
           
           <!-- Sort Options -->
           <div class="flex items-center gap-3">
@@ -573,213 +666,16 @@
             <table id="fileTable" class="min-w-full">
               <thead class="bg-gradient-to-r from-blue-900 to-blue-800 text-white sticky-header">
                 <tr>
-                  <th class="px-4 py-3 text-left font-semibold">Serial Number</th>
-                  <th class="px-4 py-3 text-left font-semibold">Folder Name</th>
-                  <th class="px-4 py-3 text-left font-semibold">Department</th>
-                  <th class="px-4 py-3 text-left font-semibold">Location</th>
-                  <th class="px-4 py-3 text-center font-semibold">Files Count</th>
-                  <th class="px-4 py-3 text-center font-semibold" style="min-width: 200px;">Actions</th>
+                  <th class="px-4 py-3 text-left font-semibold text-sm md:text-base">Serial Number</th>
+                  <th class="px-4 py-3 text-left font-semibold text-sm md:text-base">Folder Name</th>
+                  <th class="px-4 py-3 text-left font-semibold text-sm md:text-base">Department</th>
+                  <th class="px-4 py-3 text-left font-semibold text-sm md:text-base">Location</th>
+                  <th class="px-4 py-3 text-center font-semibold text-sm md:text-base">Files Count</th>
+                  <th class="px-4 py-3 text-center font-semibold text-sm md:text-base" style="min-width: 200px;">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 bg-white" id="foldersTableBody">
-                <!-- Data will be populated here by JavaScript -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <p id="noFiles" class="text-gray-500 text-center mt-6 hidden">
-          <span class="text-4xl mb-2 block">📭</span>
-          No records found matching your criteria.
-        </p>
-      </section>
-
-    </div>
-  </main>
-
-  <!-- View Folder Modal -->
-  <!-- View Modal -->
-<div id="viewModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-  <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-
-    <!-- Header -->
-    <div class="flex justify-between items-center p-4 border-b border-gray-200">
-      <h2 class="text-xl font-bold text-navy flex items-center gap-2">📁 Folder Details</h2>
-      <button id="closeViewModal" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-    </div>
-
-    <!-- Content -->
-    <div class="flex-1 overflow-y-auto p-4 space-y-4">
-
-      <!-- Top Section: QR + Folder Info -->
-      <div class="flex flex-col md:flex-row gap-6">
-        <!-- QR Code -->
-        <div class="flex flex-col items-center md:items-start w-full md:w-1/3">
-          <h3 class="text-sm font-semibold text-gray-700 mb-2">QR Code</h3>
-          <div class="border-2 border-navy rounded-xl p-3 bg-white shadow-sm">
-            <img id="viewQr" src="" alt="QR Code" class="w-36 h-36"/>
-          </div>
-        </div>
-
-        <!-- Folder Info -->
-        <div class="flex-1 grid grid-cols-2 gap-4">
-          <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Serial Number</p>
-            <p id="viewSerial" class="text-sm font-bold text-navy">-</p>
-          </div>
-          <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Folder Name</p>
-            <p id="viewFolderName" class="text-sm font-semibold text-gray-800">-</p>
-          </div>
-          <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Department</p>
-            <p id="viewDepartment" class="text-sm text-gray-700">-</p>
-          </div>
-          <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Location</p>
-            <p id="viewLocation" class="text-sm text-gray-700">-</p>
-          </div>
-          <div class="col-span-2 bg-gray-50 p-3 rounded-lg border border-gray-200">
-            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Purpose / Notes</p>
-            <p id="viewUsedFor" class="text-sm text-gray-700">-</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Files Section -->
-      <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="font-semibold text-gray-800 flex items-center gap-2">📎 Files Inside</h3>
-          <span class="badge bg-navy text-white" id="filesCount">0</span>
-        </div>
-        <div id="viewFiles" class="max-h-56 overflow-y-auto space-y-2 text-sm text-gray-700">
-          <div class="text-gray-500 italic text-center py-4">No files in this folder</div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Footer Actions -->
-    <div class="flex flex-wrap justify-end items-center gap-2 p-4 border-t border-gray-200">
-      <button id="downloadQrBtn" class="btn-navy px-3 py-1 rounded-lg text-sm flex items-center gap-1">📥 QR</button>
-      <button id="downloadBarcodeBtn" class="btn-navy px-3 py-1 rounded-lg text-sm flex items-center gap-1">📥 Barcode</button>
-      <button id="printDetailsBtn" class="bg-gray-600 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-1 hover:bg-gray-700">🖨️ Print</button>
-    </div>
-
-  </div>
-</div>
-
-
-  <!-- Edit Folder Modal -->
-  <div id="editModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-  <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-8">
-    
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="text-2xl font-bold text-navy"> Edit Folder</h3>
-      <button id="closeEditModalBtn" class="text-gray-400 hover:text-gray-600 transition text-2xl">×</button>
-    </div>
-
-    <form id="editFolderForm" class="space-y-4">
-      <!-- Folder Name -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Folder Name</label>
-        <input id="editFolderName" type="text" required
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent" />
-      </div>
-
-      <!-- Department -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
-        <select id="editDepartmentSelect" required
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent">
-          <option value="">Loading departments...</option>
-        </select>
-      </div>
-
-      <!-- Location -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
-        <select id="editLocationSelect" required
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent">
-          <option value="">Loading locations...</option>
-        </select>
-      </div>
-
-      <!-- Files Inside Folder -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Files Inside Folder</label>
-        <div id="editFilesList" class="flex flex-col gap-2 max-h-60 overflow-y-auto border border-gray-200 p-2 rounded-lg bg-gray-50">
-          <!-- JS will populate files here -->
-        </div>
-      </div>
-      <div class="flex justify-end pt-4">
-      <button 
-        type="submit"
-        class="bg-blue-900 text-white px-5 py-2 rounded-lg hover:bg-blue-950 transition"
-      >
-        Save Changes
-      </button>
-</div>
-    </form>
-
-  </div>
-</div>
-
-
-  <!-- Delete Confirmation Modal -->
-  <div id="deleteModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-      
-      <div class="text-center mb-6">
-        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span class="text-3xl">🗑️</span>
-        </div>
-        <h3 class="text-2xl font-bold text-gray-800 mb-2">Delete Folder?</h3>
-        <p class="text-gray-600">This action cannot be undone.</p>
-      </div>
-
-      <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-        <p class="text-sm text-gray-700 mb-2">
-          <span class="font-semibold">Folder:</span> <span id="deleteFolderName" class="text-red-700">-</span>
-        </p>
-        <p class="text-sm text-gray-700">
-          <span class="font-semibold">Serial:</span> <span id="deleteFolderSerial" class="text-red-700">-</span>
-        </p>
-        <p class="text-xs text-red-600 mt-3 font-medium">
-          ⚠️ All files inside this folder will also be deleted.
-        </p>
-      </div>
-
-      <div class="flex gap-3">
-        <button type="button" id="cancelDeleteBtn" 
-          class="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition font-semibold">
-          Cancel
-        </button>
-        <button type="button" id="confirmDeleteBtn" 
-          class="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold">
-           Delete
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Success Toast -->
-  <div id="successToast" class="hidden fixed top-5 right-5 z-50 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg animate-slideIn">
-    <div class="flex items-center gap-3">
- 
-      <div>
-        <p class="font-semibold" id="toastTitle">Success!</p>
-        <p class="text-sm" id="toastMessage">Operation completed successfully</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Container -->
-  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
-
-  <!-- Load JavaScript - NO INLINE SCRIPTS -->
+                 <!-- Load JavaScript - NO INLINE SCRIPTS -->
   <script src="/js/admin/admin.js"></script>
 
-</body>
-</html>
+              </tbody>

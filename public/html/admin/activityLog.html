@@ -3,74 +3,289 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Panel | File Tracking System</title>
+  <title>Activity Log | File Tracking System</title>
   <link rel="icon" type="image/png" href="/images/SAFWA-R Logo.png">
   <link rel="stylesheet" href="/styles.css">
   <script src="https://cdn.tailwindcss.com"></script>
-  
+  <style>
+    /* Mobile Sidebar Styles */
+    .mobile-menu-btn {
+      display: none;
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed !important;
+        left: -280px !important;
+        top: 0 !important;
+        height: 100vh !important;
+        width: 280px !important;
+        transition: left 0.3s ease !important;
+        z-index: 1001 !important;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        transform: none !important;
+      }
+      
+      .sidebar.active {
+        left: 0 !important;
+        display: flex !important;
+      }
+      
+      .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding-top: 60px;
+      }
+      
+      .mobile-menu-btn {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        z-index: 1000;
+        background: #1e3a8a;
+        color: white;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      }
+      
+      .mobile-menu-btn:hover {
+        background: #1e40af;
+      }
+      
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        backdrop-filter: blur(2px);
+      }
+      
+      .sidebar-overlay.active {
+        display: block;
+      }
+
+      /* Mobile table improvements */
+      #requestTable {
+        font-size: 0.75rem;
+      }
+
+      #requestTable th,
+      #requestTable td {
+        padding: 0.5rem 0.25rem;
+      }
+
+      /* Stats grid on mobile */
+      .grid.grid-cols-1 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      /* Filter section on mobile */
+      .flex.flex-wrap.gap-4 {
+        flex-direction: column;
+      }
+    }
+    
+    @media (min-width: 769px) {
+      .mobile-menu-btn {
+        display: none !important;
+      }
+      
+      .sidebar-overlay {
+        display: none !important;
+      }
+    }
+
+    /* Badge styles */
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge-approved {
+      background: #dbeafe;
+      color: #1e3a8a;
+    }
+
+    .badge-rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .badge-taken-out {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .badge-available {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    /* Action buttons */
+    .action-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .action-btn-approve {
+      background: #dbeafe;
+      color: #1e3a8a;
+      border-color: #93c5fd;
+    }
+
+    .action-btn-approve:hover {
+      background: #bfdbfe;
+      border-color: #60a5fa;
+    }
+
+    .action-btn-reject {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #fca5a5;
+    }
+
+    .action-btn-reject:hover {
+      background: #fecaca;
+      border-color: #f87171;
+    }
+
+    .action-btn-return {
+      background: #d1fae5;
+      color: #065f46;
+      border-color: #6ee7b7;
+    }
+
+    .action-btn-return:hover {
+      background: #a7f3d0;
+      border-color: #34d399;
+    }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 0.75rem;
+      padding: 2rem;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+  </style>
 </head>
 
 <body class="bg-gray-50 text-gray-800">
 
+  <!-- Mobile Menu Button -->
+  <button class="mobile-menu-btn" id="mobileMenuBtn">
+    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
   <!-- Toast Container -->
   <div id="toastContainer"></div>
 
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div>
-      <img src="/images/SAFWA-R Logo.png" alt="Logo" class="w-20 mx-auto mb-8">
-      <h1 class="text-xl font-bold mb-6 flex items-center gap-2">Admin Panel | File Tracker</h1>
-      <nav class="flex flex-col gap-3">
-        <a href="admin.html" class="nav-link">Folders & Files</a>
-        <a href="activityLog.html" class="nav-active">Activity Logs</a>
-        <a href="history.html" class="nav-link">History</a>
-        <a href="locations.html" class="nav-link">Locations</a>
-      </nav>
+   <!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div>
+    <img src="/images/SAFWA-R Logo.png" alt="Logo" class="w-20 mx-auto mb-6">
+    
+    <div class="mb-6 text-center border-b border-gray-200 pb-4">
+      <h1 class="text-2xl font-bold text-black mb-2">Admin Panel</h1>
+      <p class="text-base text-white">
+        Welcome, <span id="userNameDisplay" class="font-semibold">Admin</span>
+      </p>
     </div>
-    <button id="logoutBtn" class="logout-btn">Logout</button>
-  </aside>
-
+    
+    <nav class="flex flex-col gap-3">
+      <a href="admin.html" class="nav-link"> Folders & Files</a>
+      <a href="activityLog.html" class="nav-active"> Activity Logs</a>
+      <a href="history.html" class="nav-link"> History</a>
+      <a href="locations.html" class="nav-link"> Locations</a>
+    </nav>
+  </div>
+  
+  <button id="logoutBtn" class="logout-btn">Logout</button>
+</aside>
   <!-- Main Content -->
   <main class="main-content fade-in">
-    <div class="max-w-7xl mx-auto w-full">
+    <div class="max-w-7xl mx-auto w-full px-4 md:px-6">
 
       <!-- Page Header -->
-      <section class="card mb-8">
+      <section class="card mb-6 md:mb-8">
         <div>
-          <h2 class="section-title">File Movement Activity Log</h2>
+          <h2 class="section-title text-lg md:text-xl"> File Movement Activity Log</h2>
           <p class="text-gray-600 text-sm">Monitor and manage all file movement requests</p>
         </div>
       </section>
 
       <!-- Stats Section -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <div class="card p-4 bg-yellow-50 border-l-4 border-yellow-500">
-          <p class="text-yellow-700 text-sm font-semibold">Pending</p>
-          <p id="statPending" class="text-2xl font-bold text-yellow-900">0</p>
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8">
+        <div class="card p-3 md:p-4 bg-yellow-50 border-l-4 border-yellow-500">
+          <p class="text-yellow-700 text-xs md:text-sm font-semibold">Pending</p>
+          <p id="statPending" class="text-xl md:text-2xl font-bold text-yellow-900">0</p>
         </div>
-        <div class="card p-4 bg-blue-50 border-l-4 border-blue-500">
-          <p class="text-blue-700 text-sm font-semibold">Approved</p>
-          <p id="statApproved" class="text-2xl font-bold text-blue-900">0</p>
+        <div class="card p-3 md:p-4 bg-blue-50 border-l-4 border-blue-500">
+          <p class="text-blue-700 text-xs md:text-sm font-semibold">Approved</p>
+          <p id="statApproved" class="text-xl md:text-2xl font-bold text-blue-900">0</p>
         </div>
-        <div class="card p-4 bg-red-50 border-l-4 border-red-500">
-          <p class="text-red-700 text-sm font-semibold">Rejected</p>
-          <p id="statRejected" class="text-2xl font-bold text-red-900">0</p>
+        <div class="card p-3 md:p-4 bg-red-50 border-l-4 border-red-500">
+          <p class="text-red-700 text-xs md:text-sm font-semibold">Rejected</p>
+          <p id="statRejected" class="text-xl md:text-2xl font-bold text-red-900">0</p>
         </div>
-        <div class="card p-4 bg-green-50 border-l-4 border-green-500">
-          <p class="text-green-700 text-sm font-semibold">Taken Out</p>
-          <p id="statTakenOut" class="text-2xl font-bold text-green-900">0</p>
+        <div class="card p-3 md:p-4 bg-green-50 border-l-4 border-green-500">
+          <p class="text-green-700 text-xs md:text-sm font-semibold">Taken Out</p>
+          <p id="statTakenOut" class="text-xl md:text-2xl font-bold text-green-900">0</p>
         </div>
-        <div class="card p-4 bg-gray-50 border-l-4 border-gray-500">
-          <p class="text-gray-700 text-sm font-semibold">Available</p>
-          <p id="statAvailable" class="text-2xl font-bold text-gray-900">0</p>
+        <div class="card p-3 md:p-4 bg-gray-50 border-l-4 border-gray-500">
+          <p class="text-gray-700 text-xs md:text-sm font-semibold">Available</p>
+          <p id="statAvailable" class="text-xl md:text-2xl font-bold text-gray-900">0</p>
         </div>
       </div>
 
       <!-- Filter Section -->
-      <section class="card mb-8">
-        <h3 class="font-semibold mb-4 text-gray-700">Filter Requests</h3>
-        <div class="flex flex-wrap gap-4">
-          <select id="filterStatus" class="input w-full sm:w-52">
+      <section class="card mb-6 md:mb-8">
+        <h3 class="font-semibold mb-4 text-gray-700 text-sm md:text-base">🔍 Filter Requests</h3>
+        <div class="flex flex-col md:flex-row flex-wrap gap-3 md:gap-4">
+          <select id="filterStatus" class="input w-full md:w-52 text-sm md:text-base">
             <option value="">All Statuses</option>
             <option value="pending">Pending</option>
             <option value="approved">Approved</option>
@@ -79,41 +294,43 @@
             <option value="available">Returned (Available)</option>
           </select>
 
-          <input id="filterDate" type="date" class="input w-full sm:w-52" />
+          <input id="filterDate" type="date" class="input w-full md:w-52 text-sm md:text-base" />
           
-          <input id="searchRequest" type="text" placeholder="Search by file name..." class="input w-full sm:w-64" />
+          <input id="searchRequest" type="text" placeholder="Search by file name..." class="input w-full md:w-64 text-sm md:text-base" />
           
-          <button id="filterBtn" class="btn-primary">Apply Filter</button>
-          <button id="resetBtn" class="btn-secondary">Reset</button>
+          <div class="flex gap-2 w-full md:w-auto">
+            <button id="filterBtn" class="btn-primary flex-1 md:flex-none text-sm md:text-base">Apply</button>
+            <button id="resetBtn" class="btn-secondary flex-1 md:flex-none text-sm md:text-base">Reset</button>
+          </div>
         </div>
       </section>
 
       <!-- Activity Log Table -->
       <section class="card">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="section-title">Activity Log</h2>
+          <h2 class="section-title text-base md:text-lg">Activity Log</h2>
         </div>
 
-        <div class="overflow-x-auto">
-          <table id="requestTable" class="min-w-full text-sm text-center">
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+          <table id="requestTable" class="min-w-full text-xs md:text-sm text-center">
             <thead class="bg-blue-800 text-white uppercase text-xs">
               <tr>
-                <th class="px-4 py-3 text-center">Move ID</th>
-                <th class="px-4 py-3 text-center">File Name</th>
-                <th class="px-4 py-3 text-center">Requested By</th>
-                <th class="px-4 py-3 text-center">Request Date</th>
-                <th class="px-4 py-3 text-center">Approved By</th>
-                <th class="px-4 py-3 text-center">Status</th>
-                <th class="px-4 py-3 text-center">Actions</th>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-center">ID</th>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-center">File Name</th>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-center hidden md:table-cell">Requested By</th>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-center hidden lg:table-cell">Request Date</th>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-center hidden lg:table-cell">Approved By</th>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-center">Status</th>
+                <th class="px-2 md:px-4 py-2 md:py-3 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody id="requestTableBody" class="divide-y divide-gray-200">
+            <tbody id="requestTableBody" class="divide-y divide-gray-200 bg-white">
               <!-- Data will be loaded dynamically -->
             </tbody>
           </table>
         </div>
 
-        <p id="noRequests" class="text-gray-500 text-center mt-4 hidden">No requests found.</p>
+        <p id="noRequests" class="text-gray-500 text-center mt-4 hidden text-sm">📂 No requests found.</p>
       </section>
 
     </div>
@@ -122,18 +339,18 @@
   <!-- Reject Modal -->
   <div id="rejectModal" class="modal" onclick="if(event.target.id === 'rejectModal') window.closeRejectModal()">
     <div class="modal-content">
-      <h3 class="text-xl font-bold mb-4 text-gray-800">Reject Request</h3>
-      <p class="text-gray-600 mb-4">Please provide a reason for rejection:</p>
+      <h3 class="text-lg md:text-xl font-bold mb-4 text-gray-800">❌ Reject Request</h3>
+      <p class="text-gray-600 mb-4 text-sm md:text-base">Please provide a reason for rejection:</p>
       <textarea 
         id="rejectReason" 
-        class="w-full h-24 mb-4 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none resize-none" 
+        class="w-full h-24 mb-4 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none resize-none text-sm md:text-base" 
         placeholder="Enter rejection reason..."
       ></textarea>
       <div class="flex gap-3 justify-end">
-        <button onclick="window.closeRejectModal()" type="button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
+        <button onclick="window.closeRejectModal()" type="button" class="px-3 md:px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium text-sm md:text-base">
           Cancel
         </button>
-        <button onclick="window.confirmReject()" type="button" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium">
+        <button onclick="window.confirmReject()" type="button" class="px-3 md:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium text-sm md:text-base">
           Confirm Reject
         </button>
       </div>

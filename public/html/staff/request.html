@@ -147,17 +147,25 @@
   <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
  <!-- Sidebar -->
-  <aside class="sidebar" id="sidebar">
-    <div>
-      <img src="/images/SAFWA-R Logo.png" alt="Logo" class="w-20 mx-auto mb-8">
-      <h1 class="text-xl font-bold mb-6 flex items-center gap-2">Staff Panel</h1>
-      <nav class="flex flex-col gap-3">
-        <a href="staff.html" class="nav-link">Folders & Files</a>
-        <a href="request.html" class="nav-active">Request</a>
-      </nav>
+<aside class="sidebar" id="sidebar">
+  <div>
+    <img src="/images/SAFWA-R Logo.png" alt="Logo" class="w-20 mx-auto mb-6">
+    
+    <div class="mb-6 text-center border-b border-gray-200 pb-4">
+      <h1 class="text-2xl font-bold text-black mb-2">Staff Panel</h1>
+      <p class="text-base text-white">
+        Welcome, <span id="userNameDisplay" class="font-semibold">Staff</span>
+      </p>
     </div>
-    <button id="logoutBtn" class="logout-btn">Logout</button>
-  </aside>
+    
+    <nav class="flex flex-col gap-3">
+      <a href="staff.html" class="nav-link"> Folders & Files</a>
+      <a href="request.html" class="nav-active"> Request</a>
+    </nav>
+  </div>
+  
+  <button id="logoutBtn" class="logout-btn">Logout</button>
+</aside>
 
   <!-- Main Content -->
   <main class="main-content fade-in">
