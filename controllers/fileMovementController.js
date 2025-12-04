@@ -415,3 +415,39 @@ exports.deleteFileMovement = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+
+
+
+/* -----------------------------------------------------------
+   CHECK FOR DUPLICATE PENDING REQUEST
+----------------------------------------------------------- */
+exports.checkDuplicateRequest = async (req, res) => {
+  try {
+    const { user_id, file_id } = req.query;
+
+    if (!user_id || !file_id) {
+      return res.status(400).json({ error: "user_id and file_id are required" });
+    }
+
+    const [rows] = await db1.query(
+      `
+      SELECT COUNT(*) as count
+      FROM file_movement fm
+      INNER JOIN file_movement_files fmf ON fm.move_id = fmf.move_id
+      WHERE fm.user_id = ? 
+        AND fmf.file_id = ?
+        AND fm.status_id = 1
+      `,
+      [user_id, file_id]
+    );
+
+    const hasPendingRequest = rows[0].count > 0;
+
+    res.json({ hasPendingRequest });
+
+  } catch (err) {
+    console.error("Error checking duplicate request:", err);
+    res.status(500).json({ error: "Server error", details: err.message });
+  }
+};

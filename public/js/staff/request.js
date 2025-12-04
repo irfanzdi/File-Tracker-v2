@@ -68,11 +68,15 @@ function showToast(message, type = "success") {
 document.addEventListener("DOMContentLoaded", async () => {
   debugLog("App initialized");
   setupEventListeners();
-  await loadCurrentUser();
-  await loadFiles();
-   await loadRequests();
+
+  await loadCurrentUser();   // MUST finish first
+  debugLog("Current user ready, now loading files...");
+
+  await loadFiles();         // Now currentUser is DEFINITELY ready
+  await loadRequests();
   loadNotifications();
 });
+
 
 // ============================
 // 🔹 Setup Event Listeners
@@ -122,45 +126,47 @@ async function loadCurrentUser() {
     if (res.ok) {
       currentUser = await res.json();
       debugLog("Current user loaded:", currentUser);
-      
-      if (deptDisplay && currentUser.department_name) {
-        deptDisplay.textContent = currentUser.department_name;
-      } else if (deptDisplay) {
-        deptDisplay.textContent = "Unknown Department";
-      }
-      
-    } else {
-      currentUser = {
-        user_id: 1,
-        name: "Test User",
-        username: "testuser",
-        email: "test@example.com"
-      };
-      debugLog("User not authenticated, using mock user:", currentUser);
-      
+
       if (deptDisplay) {
-        deptDisplay.textContent = "Unknown Department";
+        deptDisplay.textContent = currentUser.department_name || "Unknown Department";
       }
+
+      return currentUser;
     }
-  } catch (err) {
-    console.error("❌ Failed to load user:", err);
+
+    // ✅ ADD dept property to fallback
     currentUser = {
       user_id: 1,
       name: "Test User",
       username: "testuser",
-      email: "test@example.com"
+      email: "test@example.com",
+      dept: 1  // ✅ ADD THIS
     };
-    debugLog("Using mock user due to error:", currentUser);
-    
-    if (deptDisplay) {
-      deptDisplay.textContent = "Unknown Department";
-    }
+
+    if (deptDisplay) deptDisplay.textContent = "Unknown Department";
+    return currentUser;
+
+  } catch (err) {
+    console.error("❌ Failed to load user:", err);
+
+    // ✅ ADD dept property to fallback
+    currentUser = {
+      user_id: 1,
+      name: "Test User",
+      username: "testuser",
+      email: "test@example.com",
+      dept: 1  // ✅ ADD THIS
+    };
+
+    if (deptDisplay) deptDisplay.textContent = "Unknown Department";
+    return currentUser;
   }
 }
 
 // ============================
 // 🔹 Load All Files
 // ============================
+
 async function loadFiles() {
   try {
     debugLog("Fetching all files from API...");
@@ -168,6 +174,8 @@ async function loadFiles() {
     debugLog("Files API response status:", res.status);
     
     if (!res.ok) {
+      const errorText = await res.text(); // ✅ Get error details
+      console.error("❌ API Error Response:", errorText); // ✅ Log it
       throw new Error(`Failed to load files: ${res.status} ${res.statusText}`);
     }
     
@@ -184,44 +192,89 @@ async function loadFiles() {
     }
     
     localStorage.setItem("files", JSON.stringify(files));
-    populateFileSelect();
+    populateFileSelect(currentUser);
     
   } catch (err) {
     console.error("❌ Error loading files:", err);
+    console.error("❌ Error details:", err.message); // ✅ More detail
     
     const stored = localStorage.getItem("files");
     if (stored) {
       files = JSON.parse(stored);
       debugLog("Using cached files:", files);
-      populateFileSelect();
+      populateFileSelect(currentUser);
       showToast("Using cached files (offline)", "error");
     } else {
       files = [];
-      populateFileSelect();
+      populateFileSelect(currentUser);
       showToast(`Failed to load files: ${err.message}`, "error");
     }
   }
 }
 
-function populateFileSelect() {
+function populateFileSelect(currentUser) {
+  console.log("🔍 populateFileSelect called with:", currentUser);
+  
+  if (!currentUser) {
+    console.warn("❌ currentUser is null/undefined");
+    return;
+  }
+
   const sel = el("fileSelect");
-  if (!sel) return;
+  if (!sel) {
+    console.warn("❌ fileSelect element not found");
+    return;
+  }
+
   sel.innerHTML = `<option value="">Choose a file</option>`;
 
+  const deptId = Number(currentUser.dept);
+  console.log("🔍 Filtering files for dept:", deptId);
+  console.log("🔍 Total files available:", files.length);
+
+  let matchCount = 0;
+
   files.forEach(f => {
-    const fileId = f.file_id;
-    const fileName = f.file_name || 'Unnamed File';
-    const folderId = f.folder_id ?? f.folder?.folder_id ?? '';
-    const folderName = f.folder_name ?? f.folder?.folder_name ?? 'No Folder';
+    const fileDept = Number(f.department_id);
+    
+    console.log(`File ${f.file_id} (${f.file_name}): dept=${fileDept}, user_dept=${deptId}, status=${f.current_status_id}`);
+    
+    // Skip files from other departments
+    if (f.department_id !== null && fileDept !== deptId) {
+      return;
+    }
+
+    matchCount++;
 
     const opt = document.createElement("option");
-    opt.value = fileId;
-    opt.textContent = `${fileName} (${folderName})`;
-    opt.dataset.folderId = folderId;
-    opt.dataset.folderName = folderName;
+    opt.value = f.file_id;
+    opt.textContent = `${f.file_name}`;
+    
+    if (f.folder_name) {
+      opt.textContent += ` (${f.folder_name})`;
+    }
+    
+    opt.dataset.folderId = f.folder_id ?? '';
+    opt.dataset.folderName = f.folder_name ?? '';
+
+    // Check if file is currently taken out (status_id = 5)
+    if (Number(f.current_status_id) === 5) {
+      opt.disabled = true;
+      opt.textContent += " — Currently Taken Out";
+      opt.style.color = "#999";
+      console.log(`  ⚠️ File ${f.file_id} is taken out (disabled)`);
+    }
+
     sel.appendChild(opt);
   });
+
+  console.log(`✅ Files dropdown populated: ${matchCount} options for dept ${deptId}`);
 }
+
+
+
+
+
 
 function autoFillFolder(fileId) {
   const sel = el("fileSelect");
@@ -533,7 +586,8 @@ async function openRequestModal() {
     await loadFiles();
   }
   
-  populateFileSelect();
+  populateFileSelect(currentUser);
+
   
   const modal = el("newRequestModal");
   if (modal) {
@@ -584,6 +638,28 @@ async function handleNewRequestSubmit(e) {
     return;
   }
 
+  const userId = currentUser?.user_id ?? currentUser?.id;
+
+  // ✅ CHECK: Does this user already have a pending request for this file?
+  try {
+    debugLog("Checking for duplicate request...");
+    const checkRes = await fetch(`/api/file-movements/check-duplicate?user_id=${userId}&file_id=${fileId}`);
+    
+    if (checkRes.ok) {
+      const checkData = await checkRes.json();
+      
+      if (checkData.hasPendingRequest) {
+        showToast("You already have a pending request for this file", "error");
+        return;
+      }
+    } else {
+      console.warn("⚠️ Duplicate check failed, continuing anyway");
+    }
+  } catch (err) {
+    console.error("⚠️ Error checking duplicate:", err);
+    // Continue anyway if check fails
+  }
+
   const moveDateTime = new Date(`${reqDate}T${reqTime}`).toISOString();
 
   const payload = {
@@ -592,7 +668,7 @@ async function handleNewRequestSubmit(e) {
     move_type: "Take Out",
     move_date: moveDateTime,
     remark: remark,
-    requested_by: currentUser?.user_id ?? currentUser?.id ?? null,
+    requested_by: userId,
     requested_by_name: currentUser?.name ?? currentUser?.username ?? null,
     status_id: 1
   };

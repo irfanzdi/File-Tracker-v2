@@ -43,32 +43,67 @@ exports.getAllFiles = async (req, res) => {
 };
 
 // =========================
-// GET file list 
-// =========================
-// =========================
-// GET file list with folder names
+// GET file list with folder details
 // =========================
 exports.getFileList = async (req, res) => {
   try {
-    const query = `
-      SELECT 
+    // First, let's see what we get WITHOUT filtering
+    const debugQuery = `
+      SELECT DISTINCT
         f.file_id,
         f.file_name,
-        COALESCE(f.folder_id, ff.folder_id) AS folder_id,
-        COALESCE(fd.folder_name, fo.folder_name) AS folder_name
+        ff.folder_id,
+        fo.folder_name,
+        fo.department_id,
+        fo.serial_num,
+        fo.location_id
       FROM file f
-      LEFT JOIN folder fd ON fd.folder_id = f.folder_id
-      LEFT JOIN folder_files ff ON f.file_id = ff.file_id
-      LEFT JOIN folder fo ON ff.folder_id = fo.folder_id
+      INNER JOIN folder_files ff ON f.file_id = ff.file_id
+      INNER JOIN folder fo ON ff.folder_id = fo.folder_id
+      LIMIT 5
+    `;
+    
+    const [debugRows] = await db1.execute(debugQuery);
+    console.log("🔍 DEBUG - Sample files WITH folders:", JSON.stringify(debugRows, null, 2));
+
+    // Now the full query with status
+    const query = `
+      SELECT DISTINCT
+        f.file_id,
+        f.file_name,
+        ff.folder_id,
+        fo.folder_name,
+        fo.department_id,
+        fo.serial_num,
+        fo.location_id,
+        
+        -- Get the latest file movement status
+        (
+          SELECT fm.status_id 
+          FROM file_movement_files fmf
+          JOIN file_movement fm ON fmf.move_id = fm.move_id
+          WHERE fmf.file_id = f.file_id
+          ORDER BY fm.move_date DESC, fm.move_id DESC
+          LIMIT 1
+        ) AS current_status_id
+
+      FROM file f
+      INNER JOIN folder_files ff ON f.file_id = ff.file_id
+      INNER JOIN folder fo ON ff.folder_id = fo.folder_id
       ORDER BY f.file_id DESC
     `;
-
-    const [rows] = await db1.query(query);
+    
+    const [rows] = await db1.execute(query);
+    
+    console.log("📁 Total files returned:", rows.length);
+    if (rows.length > 0) {
+      console.log("📁 First file:", JSON.stringify(rows[0], null, 2));
+    }
+    
     res.json(rows);
-
   } catch (err) {
-    console.error("DB ERROR:", err);
-    res.status(500).json({ message: "Failed to load file list" });
+    console.error("❌ Error in getFileList:", err);
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 };
 
@@ -84,6 +119,7 @@ exports.getFilesForExisting = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch files" });
   }
 };
+
 
 
 // =========================
@@ -130,11 +166,11 @@ exports.createFile = async (req, res) => {
     await connection.beginTransaction();
 
     // Insert into file table
-    const [result] = await connection.query(
-      "INSERT INTO file (file_name, uploaded_at, user_id,folder_id) VALUES (?, NOW(), ?,?)",
-      [file_name, sessionUser.id,folder_id]
-    );
-    const fileId = result.insertId;
+const [result] = await connection.query(
+  "INSERT INTO file (file_name, uploaded_at, user_id) VALUES (?, NOW(), ?)",
+  [file_name, sessionUser.id]  
+);
+const fileId = result.insertId;
 
     // Insert into folder_files table
     await connection.query(
