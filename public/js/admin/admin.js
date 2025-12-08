@@ -196,14 +196,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // View modal
-  el("closeViewModal")?.addEventListener("click", closeViewModal);
+  el("closeViewModalBtn")?.addEventListener("click", closeViewModal);
+  el("closeViewModalBtn2")?.addEventListener("click", closeViewModal);
   el("closeViewModalBtn2")?.addEventListener("click", closeViewModal);
   el("downloadQrBtn")?.addEventListener("click", downloadQrCode);
   el("downloadBarcodeBtn")?.addEventListener("click", downloadBarcode);
   el("printDetailsBtn")?.addEventListener("click", printFolderDetails);
 
   // Edit modal
-  el("closeEditModalBtn")?.addEventListener("click", closeEditModal);
+    el("closeEditModalBtn")?.addEventListener("click", closeEditModal);
 
   // Delete modal
   el("cancelDeleteBtn")?.addEventListener("click", closeDeleteModal);
@@ -699,7 +700,7 @@ async function openEditModal(folderId) {
           <span>${escapeHtml(fileName)}</span>
           <button 
             type="button"
-            class="text-red-600 hover:text-red-800 remove-file-btn"
+            class="hidden text-red-600 hover:text-red-800 remove-file-btn"
             data-file-id="${fileId}"
           >✖</button>
         `;
@@ -850,8 +851,9 @@ async function confirmDelete() {
   closeDeleteModal();
 }
 
-// ---------------------------
-// Create Folder
+
+ // ---------------------------
+// Create Folder - FIXED VERSION
 // ---------------------------
 async function createFolder(e) {
   e.preventDefault();
@@ -875,11 +877,14 @@ async function createFolder(e) {
       body: JSON.stringify({ folder_name, department_id, location_id, serial_num, used_for })
     });
     if (!res.ok) throw new Error("API failed");
+    
     showToast("Folder successfully added!");
     e.target.reset();
     cancelRegistration();
     await loadFolders();
+    
   } catch (err) {
+    // Fallback to localStorage if API fails
     const folders = JSON.parse(localStorage.getItem("folders") || "[]");
     folders.push({
       folder_id: Date.now(),
@@ -890,10 +895,11 @@ async function createFolder(e) {
       used_for,
       files_inside: [],
       created_at: new Date().toISOString(),
-      created_by: "Admin User",
+      created_by: window.currentUserName || "Unknown User", // ✅ Fixed!
       is_active: true
     });
     localStorage.setItem("folders", JSON.stringify(folders));
+    
     showToast("Folder added (local)!");
     e.target.reset();
     cancelRegistration();

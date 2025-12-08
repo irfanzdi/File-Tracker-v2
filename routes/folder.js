@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const controller = require("../controllers/folderController");
 
+router.get("/next-id", controller.getNextFolderId);
 router.get("/latest", controller.getLatestFolder);
 router.post("/", controller.createFolder);
 router.get("/", controller.getFolder);

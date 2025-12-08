@@ -1,4 +1,3 @@
-
 // =====================================
 // CREATE FOLDER — REFACTORED
 // =====================================
@@ -7,22 +6,21 @@ const fs = require("fs");
 const QRCode = require("qrcode");
 const { db1, db2 } = require("../db");
 
+// =====================================
+// HELPER: Generate QR Code
+// =====================================
 async function generateFolderQRUrl(folder_id) {
-  // 1️⃣ Build URL
-  const baseUrl = "http://localhost:5000/folder-view.html"; // replace 3000 with your actual port
+  const baseUrl = "http://localhost:5000/folder-view.html";
   const folderUrl = `${baseUrl}?id=${folder_id}`;
 
   console.log("[QR CREATE] QR URL:", folderUrl);
 
-  // 2️⃣ Ensure QR folder exists
   const qrDir = path.join(__dirname, "../public/qrcodes");
   if (!fs.existsSync(qrDir)) fs.mkdirSync(qrDir, { recursive: true });
 
-  // 3️⃣ Generate unique filename
   const qrFilename = `folder_${folder_id}_${Date.now()}.png`;
   const qrPath = path.join(qrDir, qrFilename);
 
-  // 4️⃣ Generate QR code
   await QRCode.toFile(qrPath, folderUrl, {
     type: "png",
     width: 400,
@@ -30,13 +28,12 @@ async function generateFolderQRUrl(folder_id) {
     errorCorrectionLevel: "H"
   });
 
-  // 5️⃣ Return public URL
   return `/qrcodes/${qrFilename}`;
 }
 
-
-
-
+// =====================================
+// CREATE FOLDER
+// =====================================
 exports.createFolder = async (req, res) => {
   try {
     const sessionUser = req.session.user;
@@ -49,55 +46,82 @@ exports.createFolder = async (req, res) => {
 
     // 🔹 Determine department
     let finalDepartmentId = department_id;
-    if (sessionUser.userlevel === 3) { // staff
+    if (sessionUser.userlevel === 3) {
       finalDepartmentId = sessionUser.usr_dept;
     } else if (!department_id) {
       return res.status(400).json({ error: "Department ID is required for non-staff users" });
     }
 
-    // 🔹 Get department and location names
-    const [[dept]] = await db2.query(
+    // 🔹 Get department
+    const [deptRows] = await db2.query(
       "SELECT department FROM tref_department WHERE department_id = ?",
       [finalDepartmentId]
     );
-    const [[loc]] = await db1.query(
+    
+    if (deptRows.length === 0) {
+      return res.status(400).json({ error: "Invalid department ID" });
+    }
+    
+    const departmentName = deptRows[0].department;
+    const deptInitials = departmentName.substring(0, 3).toUpperCase();
+    
+    // 🔹 Get location name
+    const [locRows] = await db1.query(
       "SELECT location_name FROM locations WHERE location_id = ?",
       [location_id]
     );
-
-    const departmentName = dept ? dept.department : "N/A";
-    const locationName = loc ? loc.location_name : "N/A";
-
-    // 🔹 Generate serial number: SGV/2025/DEP/001
-    const deptInitials = departmentName.substring(0, 3).toUpperCase();
+    
+    const locationName = locRows.length > 0 ? locRows[0].location_name : "Unknown";
+    
+    // 🔹 Get next folder ID
     const [last] = await db1.query(
       "SELECT MAX(folder_id) AS max_id FROM folder WHERE department_id = ?",
       [finalDepartmentId]
     );
     const nextId = (last[0].max_id || 0) + 1;
     const year = new Date().getFullYear();
-    const serial_num = `SGV/${year}/${deptInitials}/${String(nextId).padStart(3, "0")}`;
+    
+    // 🔹 Determine prefix based on logged-in user's email domain
+    const userEmail = sessionUser.email || '';
+    const prefix = userEmail.endsWith('@infracity.com.my') ? 'SGV' : 'TSSB';
+    
+    // 🔹 Generate serial number
+    const serial_num = `${prefix}/${year}/${deptInitials}/${String(nextId).padStart(3, "0")}`;
 
-    // 🔹 Insert folder
+    console.log(`📋 Generated serial number: ${serial_num} for user: ${userEmail}`);
+
+    // 🔹 Insert folder into database
     const [insertResult] = await db1.query(
       `INSERT INTO folder 
         (folder_name, serial_num, department_id, location_id, user_id, created_at)
        VALUES (?, ?, ?, ?, ?, NOW())`,
       [folder_name, serial_num, finalDepartmentId, location_id, sessionUser.id]
     );
-    const folder_id = insertResult.insertId;
 
-    // 🔹 Link files if any
-    if (Array.isArray(file_ids) && file_ids.length > 0) {
-      for (const fid of file_ids) {
-        await db1.query(
-          "INSERT INTO folder_files (folder_id, file_id) VALUES (?, ?)",
-          [folder_id, fid]
-        );
-      }
+    const newFolderId = insertResult.insertId;
+    console.log("✅ Folder inserted with ID:", newFolderId);
+
+    // 🔹 Generate QR code
+    const qrCodeUrl = await generateFolderQRUrl(newFolderId);
+    console.log("✅ QR code generated:", qrCodeUrl);
+
+    // 🔹 Update folder with QR code path
+    await db1.query(
+      "UPDATE folder SET qr_code = ? WHERE folder_id = ?",
+      [qrCodeUrl, newFolderId]
+    );
+
+    // 🔹 Link files to folder (if any)
+    if (file_ids && file_ids.length > 0) {
+      const values = file_ids.map(fid => [newFolderId, fid]);
+      await db1.query(
+        "INSERT INTO folder_files (folder_id, file_id) VALUES ?",
+        [values]
+      );
+      console.log("✅ Linked files:", file_ids.length);
     }
 
-    // 🔹 Get file names for QR
+    // 🔹 Get file names for response
     let fileNames = "No files";
     if (file_ids.length > 0) {
       const [files] = await db1.query(
@@ -107,49 +131,153 @@ exports.createFolder = async (req, res) => {
       if (files.length > 0) fileNames = files.map(f => f.file_name).join(", ");
     }
 
-    // 🔹 Generate QR text (single-line)
-    const qrText = [
-        `Serial:${serial_num}`,
-        `Folder:${folder_name}`,
-        `Dept:${departmentName}`,
-        `Location:${locationName}`,
-        `Files:${fileNames}`
-      ].join('|').trim();
-    console.log("[QR CREATE] QR Text:", qrText);
+    // ✅ Get the user's name from the users table
+    const [userRows] = await db1.query(
+      "SELECT usr_name, usr_email FROM users WHERE usr_id = ?",
+      [sessionUser.usr_id]
+    );
+    
+    const createdByName = userRows.length > 0 ? userRows[0].usr_name : "Unknown User";
+    const createdByEmail = userRows.length > 0 ? userRows[0].usr_email : "";
 
-    // 🔹 Generate QR file
-    const qrDir = path.join(__dirname, "../public/qrcodes");
-    if (!fs.existsSync(qrDir)) fs.mkdirSync(qrDir, { recursive: true });
+    console.log("✅ Folder created successfully!");
 
-    const qrFilename = `folder_${Date.now()}.png`;
-    const qrPath = path.join(qrDir, qrFilename);
-
-    await QRCode.toFile(qrPath, qrText, {
-      type: "png",
-      width: 400,
-      margin: 4,
-      errorCorrectionLevel: "H"
-    });
-
-    const qr_code = await generateFolderQRUrl(folder_id);
-    await db1.query("UPDATE folder SET qr_code = ? WHERE folder_id = ?", [qr_code, folder_id]);
-
-    // 🔹 Return folder info
+    // 🔹 Return folder info with created_by name
     res.status(201).json({
-      folder_id,
+      folder_id: newFolderId,
       serial_num,
       folder_name,
       department: departmentName,
       location_name: locationName,
       created_at: new Date(),
-      user_id: sessionUser.id,
-      files_inside: file_ids.length ? file_ids.join(", ") : "No files",
-      qr_code
+      user_id: sessionUser.usr_id,
+      created_by: createdByName,
+      created_by_email: createdByEmail,
+      files_inside: fileNames,
+      qr_code: qrCodeUrl
     });
 
   } catch (err) {
     console.error("❌ Error creating folder:", err);
+    console.error("Stack:", err.stack);
     res.status(500).json({ error: "Server error", details: err.message });
+  }
+};
+
+// =====================================
+// GET FOLDER BY ID
+// =====================================
+exports.getFolderById = async (req, res) => {
+  try {
+    const { folder_id } = req.params;
+
+    if (!folder_id) {
+      return res.status(400).json({ error: "Folder ID is required" });
+    }
+
+    // 🔹 Query with JOIN to get creator's name
+    const [folders] = await db1.query(
+      `SELECT 
+        f.folder_id,
+        f.folder_name,
+        f.serial_num,
+        f.qr_code,
+        f.created_at,
+        f.updated_at,
+        f.user_id,
+        f.department_id,
+        f.location_id,
+        u.usr_name as created_by_name,
+        u.usr_email as created_by_email,
+        l.location_name
+      FROM folder f
+      LEFT JOIN users u ON f.user_id = u.usr_id
+      LEFT JOIN locations l ON f.location_id = l.location_id
+      WHERE f.folder_id = ?`,
+      [folder_id]
+    );
+
+    if (folders.length === 0) {
+      return res.status(404).json({ error: "Folder not found" });
+    }
+
+    const folder = folders[0];
+
+    // 🔹 Get department name from db2
+    let departmentName = "Unknown";
+    if (folder.department_id) {
+      const [deptRows] = await db2.query(
+        "SELECT department FROM tref_department WHERE department_id = ?",
+        [folder.department_id]
+      );
+      if (deptRows.length > 0) {
+        departmentName = deptRows[0].department;
+      }
+    }
+
+    // 🔹 Get files in this folder
+    const [files] = await db1.query(
+      `SELECT f.file_id, f.file_name, f.file_type, f.file_size, f.created_at
+       FROM file f
+       INNER JOIN folder_files ff ON f.file_id = ff.file_id
+       WHERE ff.folder_id = ?`,
+      [folder_id]
+    );
+
+    // 🔹 Build response with created_by name
+    res.status(200).json({
+      folder_id: folder.folder_id,
+      folder_name: folder.folder_name,
+      serial_num: folder.serial_num,
+      qr_code: folder.qr_code,
+      department: departmentName,
+      department_id: folder.department_id,
+      location_name: folder.location_name || "No Locations",
+      location_id: folder.location_id,
+      created_by: folder.created_by_name || "-",
+      created_by_email: folder.created_by_email,
+      user_id: folder.user_id,
+      created_at: folder.created_at,
+      updated_at: folder.updated_at,
+      files: files.map(f => ({
+        file_id: f.file_id,
+        file_name: f.file_name,
+        file_type: f.file_type,
+        file_size: f.file_size,
+        created_at: f.created_at
+      })),
+      files_count: files.length
+    });
+
+  } catch (err) {
+    console.error("❌ Error fetching folder details:", err);
+    res.status(500).json({ error: "Server error", details: err.message });
+  }
+};
+
+
+
+
+
+exports.getNextFolderId = async (req, res) => {
+  try {
+    const { department_id } = req.query;
+    
+    if (!department_id) {
+      return res.status(400).json({ error: "Department ID is required" });
+    }
+
+    const [result] = await db1.query(
+      "SELECT MAX(folder_id) AS max_id FROM folder WHERE department_id = ?",
+      [department_id]
+    );
+    
+    const nextId = (result[0].max_id || 0) + 1;
+    
+    res.json({ next_id: nextId });
+  } catch (err) {
+    console.error("❌ Error fetching next folder ID:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 

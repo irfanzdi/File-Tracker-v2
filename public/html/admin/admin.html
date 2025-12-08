@@ -691,70 +691,86 @@
   </main>
 
   <!-- View Folder Modal -->
-  <!-- View Modal -->
-<div id="viewModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-  <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+   <!-- View Folder Modal -->
+    <div id="viewModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
 
-    <!-- Header -->
-    <div class="flex justify-between items-center p-4 border-b border-gray-200">
-      <h2 class="text-xl font-bold text-navy flex items-center gap-2">📁 Folder Details</h2>
-      <button id="closeViewModal" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-    </div>
-
-    <!-- Content -->
-    <div class="flex-1 overflow-y-auto p-4 space-y-4">
-
-      <!-- Top Section: QR + Folder Info -->
-      <div class="flex flex-col md:flex-row gap-6">
-        <!-- QR Code -->
-        <div class="flex flex-col items-center md:items-start w-full md:w-1/3">
-          <h3 class="text-sm font-semibold text-gray-700 mb-2">QR Code</h3>
-          <div class="border-2 border-navy rounded-xl p-3 bg-white shadow-sm">
-            <img id="viewQr" src="" alt="QR Code" class="w-36 h-36"/>
-          </div>
+        <!-- Header -->
+        <div class="flex justify-between items-center p-4 md:p-6 border-b border-gray-200">
+          <h2 class="text-xl md:text-2xl font-bold text-navy">📁 Folder Details</h2>
+          <button id="closeViewModalBtn" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
         </div>
 
-        <!-- Folder Info -->
-        <div class="flex-1 grid grid-cols-2 gap-4">
-          <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Serial Number</p>
-            <p id="viewSerial" class="text-sm font-bold text-navy">-</p>
+        <!-- Scrollable Content -->
+        <div class="overflow-y-auto p-4 md:p-6 flex-1 space-y-6 custom-scrollbar">
+          
+          <!-- QR Code -->
+          <div class="flex justify-center">
+            <div class="bg-white border-2 border-blue-900 rounded-xl p-4 shadow-lg flex flex-col items-center">
+              <h3 class="text-sm font-semibold text-gray-700 mb-3">QR Code</h3>
+              <img id="viewQr" src="" alt="QR Code" class="w-48 h-48">
+            </div>
           </div>
-          <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Folder Name</p>
-            <p id="viewFolderName" class="text-sm font-semibold text-gray-800">-</p>
-          </div>
-          <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Department</p>
-            <p id="viewDepartment" class="text-sm text-gray-700">-</p>
-          </div>
-          <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Location</p>
-            <p id="viewLocation" class="text-sm text-gray-700">-</p>
-          </div>
-          <div class="col-span-2 bg-gray-50 p-3 rounded-lg border border-gray-200">
-            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Purpose / Notes</p>
-            <p id="viewUsedFor" class="text-sm text-gray-700">-</p>
-          </div>
-        </div>
-      </div>
 
-      <!-- Files Section -->
-      <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="font-semibold text-gray-800 flex items-center gap-2">📎 Files Inside</h3>
-          <span class="badge bg-navy text-white" id="filesCount">0</span>
-        </div>
-        <div id="viewFiles" class="max-h-56 overflow-y-auto space-y-2 text-sm text-gray-700">
-          <div class="text-gray-500 italic text-center py-4">No files in this folder</div>
-        </div>
-      </div>
+          <!-- Folder Info Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <div class="space-y-4">
+              <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Serial Number</p>
+                <p id="viewSerial" class="text-base md:text-lg font-bold text-navy break-all">-</p>
+              </div>
+              <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Folder Name</p>
+                <p id="viewFolderName" class="text-base md:text-lg font-semibold text-gray-800 break-words">-</p>
+              </div>
+              <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Department</p>
+                <p id="viewDepartment" class="text-sm md:text-base text-gray-700">-</p>
+              </div>
+            </div>
+            <div class="space-y-4">
+              <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Location</p>
+                <p id="viewLocation" class="text-sm md:text-base text-gray-700">-</p>
+              </div>
+              <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Created By</p>
+                <p id="viewCreatedBy" class="text-sm md:text-base text-gray-700">-</p>
+              </div>
+              
+              <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Created At</p>
+                <p id="viewCreatedAt" class="text-sm md:text-base text-gray-700">-</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Purpose Card -->
+          <div id="viewUsedForSection" class="bg-blue-50 p-4 md:p-6 rounded-xl border border-blue-200 hidden">
+            <h3 class="font-bold text-gray-800 mb-2 flex items-center gap-2 text-sm md:text-base">
+              <span class="text-navy">📝</span> Purpose
+            </h3>
+            <p id="viewUsedFor" class="text-sm md:text-base text-gray-700 break-words">-</p>
+          </div>
+
+          <!-- Files Section -->
+          <div class="bg-blue-50 p-4 md:p-6 rounded-xl border border-blue-200">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-bold text-gray-800 flex items-center gap-2 text-sm md:text-base">
+                <span class="text-navy">📎</span> Files Inside
+              </h3>
+              <span class="badge bg-navy text-white text-sm" id="filesCount">0</span>
+            </div>
+            <div id="viewFiles" class="space-y-2">
+              <div class="text-gray-500 italic text-center py-8 text-sm">No files in this folder</div>
+            </div>
+          </div>
 
     </div>
 
     <!-- Footer Actions -->
     <div class="flex flex-wrap justify-end items-center gap-2 p-4 border-t border-gray-200">
-      <button id="downloadQrBtn" class="btn-navy px-3 py-1 rounded-lg text-sm flex items-center gap-1">📥 QR</button>
+      <button id="downloadQrBtn" class="btn-navy px-3 py-1 rounded-lg text-sm flex items-center gap-1">📥 Download QR</button>
       <button id="downloadBarcodeBtn" class="btn-navy px-3 py-1 rounded-lg text-sm flex items-center gap-1">📥 Barcode</button>
       <button id="printDetailsBtn" class="bg-gray-600 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-1 hover:bg-gray-700">🖨️ Print</button>
     </div>
@@ -870,6 +886,9 @@
 
   <!-- Toast Container -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
+
+
 
   <!-- Load JavaScript - NO INLINE SCRIPTS -->
   <script src="/js/admin/admin.js"></script>
