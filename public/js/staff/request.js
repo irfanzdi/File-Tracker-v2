@@ -613,14 +613,14 @@ function resetFilters() {
 // 🔹 Update Stats
 // ============================
 function updateStats(requests) {
-  const stats = { pending:0, rejected:0, approved:0, takenOut:0, returned:0 };
+  const stats = { pending:0, rejected:0, approved:0, returned:0, takenOut:0 };
   (requests || []).forEach(r => {
     switch (r.status_id) {
       case 1: stats.pending++; break;
       case 2: stats.rejected++; break;
       case 3: stats.approved++; break;
-      case 4: stats.takenOut++; break;
-      case 5: stats.returned++; break;
+      case 4: stats.returned++; break;
+      case 5: stats.takenOut++; break;
     }
   });
 
