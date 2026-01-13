@@ -675,6 +675,7 @@ async function openEditModal(folderId) {
     const locSelect = el("editLocationSelect");
     const filesContainer = el("editFilesList");
     const editForm = el("editFolderForm");
+    const filesData = folder.files || [];
 
     if (!editModal || !folderNameInput || !deptSelect || !locSelect || !filesContainer || !editForm) {
       console.error("Missing modal elements");
@@ -687,26 +688,107 @@ async function openEditModal(folderId) {
     deptSelect.value = folder.department_id || "";
     locSelect.value = folder.location_id || "";
 
+    // ========================================
+    // POPULATE FILES WITH RENAME CAPABILITY
+    // ========================================
     filesContainer.innerHTML = "";
 
-    if (folder.files_inside?.length > 0) {
-      folder.files_inside.forEach((fileName, i) => {
-        const fileId = folder.file_ids?.[i];
+    if (folder.files_inside && folder.files_inside.length > 0) {
+      folder.files_inside.forEach((fileObj, i) => {
+        // Handle both object format and string format
+        const fileId = fileObj.file_id || folder.file_ids?.[i];
+        const fileName = fileObj.file_name || fileObj;
 
         const div = document.createElement("div");
-        div.className = "file-item flex justify-between items-center bg-white p-2 rounded border";
+        div.className = "file-item bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition";
+        div.dataset.fileId = fileId;
 
         div.innerHTML = `
-          <span>${escapeHtml(fileName)}</span>
-          <button 
-            type="button"
-            class="hidden text-red-600 hover:text-red-800 remove-file-btn"
-            data-file-id="${fileId}"
-          >✖</button>
+          <div class="flex items-center justify-between gap-3">
+            
+            <!-- File Icon & Name Display -->
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+              <svg class="w-5 h-5 text-blue-900 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              <span class="file-name-display text-sm text-gray-700 truncate">${escapeHtml(fileName)}</span>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-2">
+              <button type="button" class="rename-btn text-gray-500 hover:text-blue-900 transition" title="Rename file">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              </button>
+              <button 
+                type="button"
+                class="text-red-600 hover:text-red-800 remove-file-btn"
+                data-file-id="${fileId}"
+                title="Remove from folder"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Hidden Input for Editing -->
+          <div class="file-edit-mode hidden mt-2">
+            <div class="flex gap-2">
+              <input type="text" class="file-name-input flex-1 px-3 py-1.5 text-sm border border-blue-900 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent" value="${escapeHtml(fileName)}" />
+              <button type="button" class="save-rename-btn bg-blue-900 text-white px-3 py-1.5 rounded-lg hover:bg-blue-950 transition text-sm">
+                Save
+              </button>
+              <button type="button" class="cancel-rename-btn text-gray-500 hover:text-gray-700 px-3 py-1.5 text-sm">
+                Cancel
+              </button>
+            </div>
+          </div>
         `;
 
         filesContainer.appendChild(div);
       });
+
+      // Attach rename event listeners
+      attachRenameListeners();
+
+      // Attach remove file listeners
+      filesContainer.querySelectorAll(".remove-file-btn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const fileId = e.currentTarget.dataset.fileId;
+          const fileDiv = e.currentTarget.closest(".file-item");
+
+          if (!fileId || !fileDiv) return;
+
+          if (!confirm("Remove this file from the folder?")) return;
+
+          try {
+            const unlinkRes = await fetch(`/api/files/${fileId}/unlink`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ folder_id: null })
+            });
+
+            if (!unlinkRes.ok) throw new Error("Failed to unlink file");
+
+            fileDiv.remove();
+            showToast("File removed from folder", "success");
+
+            // Check if no files left
+            const remainingFiles = filesContainer.querySelectorAll('.file-item');
+            if (remainingFiles.length === 0) {
+              filesContainer.innerHTML = '<div class="text-gray-500 italic py-2">No files in this folder</div>';
+            }
+
+          } catch (err) {
+            console.error(err);
+            showToast("Error removing file", "error");
+          }
+        });
+      });
+
     } else {
       filesContainer.innerHTML = `
         <div class="text-gray-500 italic py-2">No files in this folder</div>
@@ -716,36 +798,108 @@ async function openEditModal(folderId) {
     editModal.classList.remove("hidden");
     setTimeout(() => editModal.classList.add("modal-show"), 10);
 
-    filesContainer.querySelectorAll(".remove-file-btn").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        const fileId = e.currentTarget.dataset.fileId;
-        const fileDiv = e.currentTarget.closest(".file-item");
-
-        if (!fileId || !fileDiv) return;
-
-        try {
-          const unlinkRes = await fetch(`/api/files/${fileId}/unlink`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ folder_id: null })
-          });
-
-          if (!unlinkRes.ok) throw new Error("Failed to unlink file");
-
-          fileDiv.remove();
-          showToast("File removed from folder", "success");
-
-        } catch (err) {
-          console.error(err);
-          showToast("Error removing file", "error");
-        }
-      });
-    });
-
   } catch (err) {
     console.error(err);
     showToast("Failed to open edit modal", "error");
   }
+}
+
+// ---------------------------
+// Attach Rename Event Listeners
+// ---------------------------
+function attachRenameListeners() {
+  const fileItems = document.querySelectorAll('#editFilesList .file-item');
+  
+  fileItems.forEach(item => {
+    const renameBtn = item.querySelector('.rename-btn');
+    const saveBtn = item.querySelector('.save-rename-btn');
+    const cancelBtn = item.querySelector('.cancel-rename-btn');
+    const displayMode = item.querySelector('.file-name-display').parentElement.parentElement;
+    const editMode = item.querySelector('.file-edit-mode');
+    const input = item.querySelector('.file-name-input');
+    const originalName = input.value;
+
+    // Enter edit mode
+    renameBtn.addEventListener('click', () => {
+      displayMode.classList.add('hidden');
+      editMode.classList.remove('hidden');
+      input.focus();
+      input.select();
+    });
+
+    // Cancel editing
+    cancelBtn.addEventListener('click', () => {
+      input.value = originalName;
+      editMode.classList.add('hidden');
+      displayMode.classList.remove('hidden');
+    });
+
+    // Save new name
+    saveBtn.addEventListener('click', async () => {
+      const newName = input.value.trim();
+      const fileId = item.dataset.fileId;
+      
+      if (!newName) {
+        showToast('File name cannot be empty', 'error');
+        return;
+      }
+
+      if (newName === originalName) {
+        // No change, just close
+        editMode.classList.add('hidden');
+        displayMode.classList.remove('hidden');
+        return;
+      }
+
+      // Disable button while saving
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+
+      try {
+        // Use your existing updateFile endpoint
+        const response = await fetch(`/api/files/${fileId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ file_name: newName })
+        });
+
+        if (response.ok) {
+          // Update display with new name
+          item.querySelector('.file-name-display').textContent = newName;
+          editMode.classList.add('hidden');
+          displayMode.classList.remove('hidden');
+          
+          showToast('File renamed successfully', 'success');
+        } else {
+          const error = await response.json();
+          showToast('Failed to rename file: ' + (error.error || 'Unknown error'), 'error');
+          input.value = originalName; // Restore original
+        }
+      } catch (err) {
+        console.error('Error renaming file:', err);
+        showToast('Error renaming file. Please try again.', 'error');
+        input.value = originalName; // Restore original
+      } finally {
+        // Re-enable button
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+      }
+    });
+
+    // Allow Enter key to save
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        saveBtn.click();
+      }
+    });
+
+    // Allow Escape key to cancel
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        cancelBtn.click();
+      }
+    });
+  });
 }
 
 function closeEditModal() {
@@ -895,7 +1049,7 @@ async function createFolder(e) {
       used_for,
       files_inside: [],
       created_at: new Date().toISOString(),
-      created_by: window.currentUserName || "Unknown User", // ✅ Fixed!
+      created_by: window.currentUserName || "Unknown User", 
       is_active: true
     });
     localStorage.setItem("folders", JSON.stringify(folders));

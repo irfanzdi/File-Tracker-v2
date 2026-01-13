@@ -167,93 +167,93 @@ exports.createFolder = async (req, res) => {
 // =====================================
 // GET FOLDER BY ID
 // =====================================
-exports.getFolderById = async (req, res) => {
-  try {
-    const { folder_id } = req.params;
+// exports.getFolderById = async (req, res) => {
+//   try {
+//     const { folder_id } = req.params;
 
-    if (!folder_id) {
-      return res.status(400).json({ error: "Folder ID is required" });
-    }
+//     if (!folder_id) {
+//       return res.status(400).json({ error: "Folder ID is required" });
+//     }
 
-    // 🔹 Query with JOIN to get creator's name
-    const [folders] = await db1.query(
-      `SELECT 
-        f.folder_id,
-        f.folder_name,
-        f.serial_num,
-        f.qr_code,
-        f.created_at,
-        f.updated_at,
-        f.user_id,
-        f.department_id,
-        f.location_id,
-        u.usr_name as created_by_name,
-        u.usr_email as created_by_email,
-        l.location_name
-      FROM folder f
-      LEFT JOIN users u ON f.user_id = u.usr_id
-      LEFT JOIN locations l ON f.location_id = l.location_id
-      WHERE f.folder_id = ?`,
-      [folder_id]
-    );
+//     // 🔹 Query with JOIN to get creator's name
+//     const [folders] = await db1.query(
+//       `SELECT 
+//         f.folder_id,
+//         f.folder_name,
+//         f.serial_num,
+//         f.qr_code,
+//         f.created_at,
+//         f.updated_at,
+//         f.user_id,
+//         f.department_id,
+//         f.location_id,
+//         u.usr_name as created_by_name,
+//         u.usr_email as created_by_email,
+//         l.location_name
+//       FROM folder f
+//       LEFT JOIN users u ON f.user_id = u.usr_id
+//       LEFT JOIN locations l ON f.location_id = l.location_id
+//       WHERE f.folder_id = ?`,
+//       [folder_id]
+//     );
 
-    if (folders.length === 0) {
-      return res.status(404).json({ error: "Folder not found" });
-    }
+//     if (folders.length === 0) {
+//       return res.status(404).json({ error: "Folder not found" });
+//     }
 
-    const folder = folders[0];
+//     const folder = folders[0];
 
-    // 🔹 Get department name from db2
-    let departmentName = "Unknown";
-    if (folder.department_id) {
-      const [deptRows] = await db2.query(
-        "SELECT department FROM tref_department WHERE department_id = ?",
-        [folder.department_id]
-      );
-      if (deptRows.length > 0) {
-        departmentName = deptRows[0].department;
-      }
-    }
+//     // 🔹 Get department name from db2
+//     let departmentName = "Unknown";
+//     if (folder.department_id) {
+//       const [deptRows] = await db2.query(
+//         "SELECT department FROM tref_department WHERE department_id = ?",
+//         [folder.department_id]
+//       );
+//       if (deptRows.length > 0) {
+//         departmentName = deptRows[0].department;
+//       }
+//     }
 
-    // 🔹 Get files in this folder
-    const [files] = await db1.query(
-      `SELECT f.file_id, f.file_name, f.file_type, f.file_size, f.created_at
-       FROM file f
-       INNER JOIN folder_files ff ON f.file_id = ff.file_id
-       WHERE ff.folder_id = ?`,
-      [folder_id]
-    );
+//     // 🔹 Get files in this folder
+//     const [files] = await db1.query(
+//       `SELECT f.file_id, f.file_name, f.file_type, f.file_size, f.created_at
+//        FROM file f
+//        INNER JOIN folder_files ff ON f.file_id = ff.file_id
+//        WHERE ff.folder_id = ?`,
+//       [folder_id]
+//     );
 
-    // 🔹 Build response with created_by name
-    res.status(200).json({
-      folder_id: folder.folder_id,
-      folder_name: folder.folder_name,
-      serial_num: folder.serial_num,
-      qr_code: folder.qr_code,
-      department: departmentName,
-      department_id: folder.department_id,
-      location_name: folder.location_name || "No Locations",
-      location_id: folder.location_id,
-      created_by: folder.created_by_name || "-",
-      created_by_email: folder.created_by_email,
-      user_id: folder.user_id,
-      created_at: folder.created_at,
-      updated_at: folder.updated_at,
-      files: files.map(f => ({
-        file_id: f.file_id,
-        file_name: f.file_name,
-        file_type: f.file_type,
-        file_size: f.file_size,
-        created_at: f.created_at
-      })),
-      files_count: files.length
-    });
+//     // 🔹 Build response with created_by name
+//     res.status(200).json({
+//       folder_id: folder.folder_id,
+//       folder_name: folder.folder_name,
+//       serial_num: folder.serial_num,
+//       qr_code: folder.qr_code,
+//       department: departmentName,
+//       department_id: folder.department_id,
+//       location_name: folder.location_name || "No Locations",
+//       location_id: folder.location_id,
+//       created_by: folder.created_by_name || "-",
+//       created_by_email: folder.created_by_email,
+//       user_id: folder.user_id,
+//       created_at: folder.created_at,
+//       updated_at: folder.updated_at,
+//       files: files.map(f => ({
+//         file_id: f.file_id,
+//         file_name: f.file_name,
+//         file_type: f.file_type,
+//         file_size: f.file_size,
+//         created_at: f.created_at
+//       })),
+//       files_count: files.length
+//     });
 
-  } catch (err) {
-    console.error("❌ Error fetching folder details:", err);
-    res.status(500).json({ error: "Server error", details: err.message });
-  }
-};
+//   } catch (err) {
+//     console.error("❌ Error fetching folder details:", err);
+//     res.status(500).json({ error: "Server error", details: err.message });
+//   }
+// };
 
 
 
